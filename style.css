@@ -1267,6 +1267,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   background: rgba(0, 0, 0, 0.32);
   border: 1px dashed rgba(248, 225, 120, 0.35);
   border-radius: 10px;
@@ -1274,12 +1276,34 @@ body {
   margin-top: 6px;
 }
 
-.batch-selector-wrap {
+.batch-selector-wrap,
+.spelling-optin-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 0.82rem;
   color: var(--chalk-dim);
+}
+
+.spelling-batch-progress {
+  font-size: 0.72rem;
+  color: var(--chalk-yellow);
+  background: rgba(246, 194, 62, 0.18);
+  border: 1px solid var(--chalk-yellow);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.chip-sound-btn {
+  margin-left: 3px;
+  opacity: 0.75;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.chip-sound-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 .batch-select {

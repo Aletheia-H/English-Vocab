@@ -13,6 +13,7 @@
 const STORAGE_KEY_MASTERED = 'chalkboard_vocab_mastered_v1';
 const STORAGE_KEY_CUSTOM = 'chalkboard_vocab_custom_v1';
 const STORAGE_KEY_SETTINGS = 'chalkboard_vocab_settings_v1';
+const STORAGE_KEY_SPELLING_OPTIN = 'chalkboard_spelling_optin_mode_v1';
 
 let vocabList = [];
 let sessionQueue = [];
@@ -24,6 +25,14 @@ let currentMode = 'flashcard'; // 'flashcard' | 'spelling' | 'dictionary'
 let isCardFlipped = false;
 let sessionMasteredCount = 0;
 let pendingAssessment = null; // { type: 'hesitate' | 'stranger', word: Object }
+
+// 拼寫練習 Opt-in 與間隔集中拼寫狀態
+// 'every_5' (預設: 每 5 張集中) | 'every_10' | 'immediate' (即時) | 'batch_end' (整批結束時) | 'off' (關閉純刷卡)
+let currentSpellingMode = 'every_5';
+let pendingSpellingQueue = []; // [{ type: 'hesitate'|'stranger', word: Object }]
+let cardsEvaluatedInInterval = 0; // 當前區間內已評估卡片數
+let activeBatchSpellingIndex = 0; // 集中批次拼寫中單字指針
+let isBatchSpellingActive = false; // 是否正在進行集中批次拼寫
 
 // 歷史導航棧與 36K 字典全庫搜尋狀態
 let navigationHistory = []; // Stack of { word, fromMode, isFlipped, queueIndex }
@@ -58,8 +67,9 @@ function initDomReferences() {
     navBackWordTitle: document.getElementById('navBackWordTitle'),
     navDepthBadge: document.getElementById('navDepthBadge'),
 
-    // 批次計數器
+    // 批次計數器與拼寫模式選單
     batchSizeSelect: document.getElementById('batchSizeSelect'),
+    spellingOptinSelect: document.getElementById('spellingOptinSelect'),
     sessionCardIndex: document.getElementById('sessionCardIndex'),
     sessionTotalCount: document.getElementById('sessionTotalCount'),
 
@@ -91,7 +101,9 @@ function initDomReferences() {
     spellingPromptPhonetic: document.getElementById('spellingPromptPhonetic'),
     spellingPromptSlots: document.getElementById('spellingPromptSlots'),
     spellingPromptInput: document.getElementById('spellingPromptInput'),
-    spellingPromptFeedback: document.getElementById('spellingPromptFeedback')
+    spellingPromptFeedback: document.getElementById('spellingPromptFeedback'),
+    spellingBatchProgress: document.getElementById('spellingBatchProgress'),
+    spellingSkipBtn: document.getElementById('spellingSkipBtn')
   };
 }
 
@@ -101,6 +113,7 @@ function initDomReferences() {
 function initApp() {
   initDomReferences();
   loadStoredData();
+  loadSpellingConfig();
   buildCategoryPills();
   buildDictScopePills();
   setupEventListeners();
@@ -118,6 +131,41 @@ function initApp() {
   }
 
   switchCategory('all');
+}
+
+function loadSpellingConfig() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_SPELLING_OPTIN);
+    if (saved && ['every_5', 'every_10', 'immediate', 'batch_end', 'off'].includes(saved)) {
+      currentSpellingMode = saved;
+    } else {
+      currentSpellingMode = 'every_5';
+    }
+  } catch (e) {
+    currentSpellingMode = 'every_5';
+  }
+
+  if (dom.spellingOptinSelect) {
+    dom.spellingOptinSelect.value = currentSpellingMode;
+  }
+}
+
+function changeSpellingOptin(mode) {
+  if (!['every_5', 'every_10', 'immediate', 'batch_end', 'off'].includes(mode)) return;
+  currentSpellingMode = mode;
+  try {
+    localStorage.setItem(STORAGE_KEY_SPELLING_OPTIN, mode);
+  } catch (e) {}
+
+  const descriptions = {
+    'every_5': '🎯 已切換為：每 5 張集中拼寫練習',
+    'every_10': '🎯 已切換為：每 10 張集中拼寫練習',
+    'immediate': '⚡ 已切換為：遇不熟/陌生立即引導拼寫',
+    'batch_end': '🏁 已切換為：整批卡片結束時集中拼寫',
+    'off': '🚫 已切換為：關閉拼寫（純刷卡速讀模式）'
+  };
+
+  showFeedbackBanner('good', descriptions[mode] || '拼寫練習模式已更新');
 }
 
 function getMasteredIds() {
@@ -250,6 +298,9 @@ function initSessionBatch() {
   sessionInitialBatch = [...sessionQueue];
   currentIndex = 0;
   isCardFlipped = false;
+  pendingSpellingQueue = [];
+  cardsEvaluatedInInterval = 0;
+  isBatchSpellingActive = false;
 
   updateStats();
   renderCurrentCard();
@@ -547,14 +598,14 @@ function toggleCardFlip() {
 }
 
 // ===================================================================
-// 4. 三大選項艾賓浩斯記憶法評估與強制拼寫引導 (Requirement 3)
+// 4. 三大選項艾賓浩斯記憶法評估與 Opt-in / 間隔集中拼寫 (Requirement 3 & 10)
 // ===================================================================
 
 /**
  * 處理字卡評估選項：
  * 'familiar': 🟢 非常熟悉 (之後的字卡不再出現，直接跳下一張)
- * 'hesitate': 🟠 不熟/忘了 (將字卡排序往中間排序，必須提示練習拼寫)
- * 'stranger': 🔴 陌生 (將此字卡在1~2張卡片後排序，必須提示練習拼寫)
+ * 'hesitate': 🟠 不熟/忘了 (將字卡往中間排序，按模式引導或集中拼寫)
+ * 'stranger': 🔴 陌生 (將此字卡在1~2張卡片後排序，按模式引導或集中拼寫)
  */
 function handleCardAssessment(type) {
   const currentWord = getCurrentWord();
@@ -575,11 +626,24 @@ function handleCardAssessment(type) {
     }
 
     sessionMasteredCount++;
+    cardsEvaluatedInInterval++;
     playChalkSuccessSound();
     updateStats();
 
+    // 隊列為空 (整批卡片已刷完)
     if (sessionQueue.length === 0) {
+      if (pendingSpellingQueue.length > 0 && currentSpellingMode !== 'off') {
+        startBatchSpellingSession();
+        return;
+      }
       openBatchCompleteModal();
+      return;
+    }
+
+    // 檢查是否達到集中間隔門檻 (例如每 5 張或每 10 張)
+    const intervalLimit = currentSpellingMode === 'every_5' ? 5 : (currentSpellingMode === 'every_10' ? 10 : Infinity);
+    if (cardsEvaluatedInInterval >= intervalLimit && pendingSpellingQueue.length > 0 && currentSpellingMode !== 'off') {
+      startBatchSpellingSession();
       return;
     }
 
@@ -590,31 +654,163 @@ function handleCardAssessment(type) {
       openMilestoneModal();
     }
   } else if (type === 'hesitate' || type === 'stranger') {
-    // 🟠 不熟 / 忘了 或 🔴 陌生：必須啟動即時引導拼寫測驗！
-    pendingAssessment = {
-      type: type,
-      word: currentWord
-    };
-    openSpellingPrompt(type, currentWord);
+    // 隊列重排邏輯 (艾賓浩斯記憶法)
+    if (sessionQueue.length > 1) {
+      const currentCard = sessionQueue.splice(currentIndex, 1)[0];
+
+      if (type === 'hesitate') {
+        // 🟠 不熟/忘了：將字卡的排序往中間排序
+        const midOffset = Math.max(2, Math.floor(sessionQueue.length / 2));
+        const targetIndex = Math.min(sessionQueue.length, currentIndex + midOffset);
+        sessionQueue.splice(targetIndex, 0, currentCard);
+      } else if (type === 'stranger') {
+        // 🔴 陌生：將此字卡在 1~2 張卡片後排序
+        const nearOffset = Math.min(2, Math.max(1, sessionQueue.length));
+        const targetIndex = Math.min(sessionQueue.length, currentIndex + nearOffset);
+        sessionQueue.splice(targetIndex, 0, currentCard);
+      }
+    }
+
+    if (currentIndex >= sessionQueue.length) {
+      currentIndex = 0;
+    }
+
+    cardsEvaluatedInInterval++;
+    updateStats();
+
+    // 根據 Opt-in 模式分流處理
+    if (currentSpellingMode === 'off') {
+      // 🚫 關閉拼寫：純刷卡模式，零中斷
+      triggerCardTransition('next');
+      return;
+    }
+
+    if (currentSpellingMode === 'immediate') {
+      // ⚡ 即時模式：遇不熟/陌生立即引導拼寫
+      pendingAssessment = {
+        type: type,
+        word: currentWord,
+        isBatch: false
+      };
+      openSpellingPrompt(type, currentWord, false);
+      return;
+    }
+
+    // 🎯 間隔集中模式 (every_5, every_10, batch_end)
+    if (!pendingSpellingQueue.some(item => item.word.id === currentWord.id)) {
+      pendingSpellingQueue.push({ type: type, word: currentWord });
+    }
+
+    const intervalLimit = currentSpellingMode === 'every_5' ? 5 : (currentSpellingMode === 'every_10' ? 10 : Infinity);
+
+    if (cardsEvaluatedInInterval >= intervalLimit && pendingSpellingQueue.length > 0) {
+      // 達到間隔門檻，啟動集中連續拼寫
+      startBatchSpellingSession();
+    } else {
+      // 未達門檻，加入佇列並切換至下一張
+      showFeedbackBanner('info', `📝 已加入集中拼寫清單（目前累積 ${pendingSpellingQueue.length} 詞）`);
+      triggerCardTransition('next');
+    }
   }
 }
 
 // ===================================================================
-// 5. 即時引導式拼寫練習彈窗 (Guided Active Recall Spelling Modal)
+// 5. 即時與集中批次拼寫練習系統 (Guided & Batch Interval Spelling)
 // ===================================================================
-function openSpellingPrompt(type, word) {
+
+function startBatchSpellingSession() {
+  if (pendingSpellingQueue.length === 0) return;
+  isBatchSpellingActive = true;
+  activeBatchSpellingIndex = 0;
+  cardsEvaluatedInInterval = 0;
+  loadBatchSpellingWord(0);
+}
+
+function loadBatchSpellingWord(idx) {
+  if (!isBatchSpellingActive || idx >= pendingSpellingQueue.length) {
+    finishAllBatchSpelling();
+    return;
+  }
+  activeBatchSpellingIndex = idx;
+  const currentItem = pendingSpellingQueue[idx];
+  pendingAssessment = {
+    type: currentItem.type,
+    word: currentItem.word,
+    isBatch: true,
+    batchIndex: idx,
+    batchTotal: pendingSpellingQueue.length
+  };
+
+  openSpellingPrompt(currentItem.type, currentItem.word, true);
+}
+
+function skipCurrentSpellingWord() {
+  if (!isBatchSpellingActive) {
+    closeSpellingPrompt(true);
+    return;
+  }
+  const skippedWord = pendingAssessment && pendingAssessment.word ? pendingAssessment.word.word : '';
+  showFeedbackBanner('info', `⏭️ 已跳過單字：${skippedWord}`);
+  activeBatchSpellingIndex++;
+  if (activeBatchSpellingIndex >= pendingSpellingQueue.length) {
+    finishAllBatchSpelling();
+  } else {
+    loadBatchSpellingWord(activeBatchSpellingIndex);
+  }
+}
+
+function finishAllBatchSpelling() {
+  isBatchSpellingActive = false;
+  pendingSpellingQueue = [];
+  cardsEvaluatedInInterval = 0;
+  pendingAssessment = null;
+
+  if (dom.spellingPromptModal) {
+    dom.spellingPromptModal.classList.remove('active');
+  }
+  if (dom.spellingBatchProgress) {
+    dom.spellingBatchProgress.style.display = 'none';
+  }
+  if (dom.spellingSkipBtn) {
+    dom.spellingSkipBtn.style.display = 'none';
+  }
+
+  showFeedbackBanner('good', '🎉 太棒了！本輪集中拼寫練習全部完成！');
+
+  if (sessionQueue.length === 0) {
+    openBatchCompleteModal();
+  } else {
+    triggerCardTransition('next');
+  }
+}
+
+function openSpellingPrompt(type, word, isBatch = false) {
   if (!dom.spellingPromptModal) {
     initDomReferences();
   }
   if (!dom.spellingPromptModal) return;
 
+  // 設置批次進度徽章與跳過按鈕
+  if (dom.spellingBatchProgress) {
+    if (isBatch && isBatchSpellingActive) {
+      dom.spellingBatchProgress.style.display = 'inline-block';
+      dom.spellingBatchProgress.innerText = `集中測驗 ${activeBatchSpellingIndex + 1} / ${pendingSpellingQueue.length}`;
+    } else {
+      dom.spellingBatchProgress.style.display = 'none';
+    }
+  }
+
+  if (dom.spellingSkipBtn) {
+    dom.spellingSkipBtn.style.display = isBatch ? 'inline-block' : 'none';
+  }
+
   // 設置彈窗標題徽章
   if (type === 'hesitate') {
-    dom.spellingPromptBadge.innerText = '🟠 不熟 / 忘了・強化拼寫練習';
+    dom.spellingPromptBadge.innerText = isBatch ? '🟠 不熟單字・集中拼寫' : '🟠 不熟 / 忘了・強化拼寫練習';
     dom.spellingPromptBadge.style.color = 'var(--chalk-orange)';
     dom.spellingPromptBadge.style.borderColor = 'var(--chalk-orange)';
   } else {
-    dom.spellingPromptBadge.innerText = '🔴 陌生生字・引導拼寫練習';
+    dom.spellingPromptBadge.innerText = isBatch ? '🔴 陌生單字・集中拼寫' : '🔴 陌生生字・引導拼寫練習';
     dom.spellingPromptBadge.style.color = 'var(--chalk-pink)';
     dom.spellingPromptBadge.style.borderColor = 'var(--chalk-pink)';
   }
@@ -667,7 +863,16 @@ function submitSpellingPrompt() {
     revealSpellingPromptAnswer(true);
 
     setTimeout(() => {
-      finishSpellingPrompt();
+      if (isBatchSpellingActive) {
+        activeBatchSpellingIndex++;
+        if (activeBatchSpellingIndex >= pendingSpellingQueue.length) {
+          finishAllBatchSpelling();
+        } else {
+          loadBatchSpellingWord(activeBatchSpellingIndex);
+        }
+      } else {
+        finishSpellingPrompt();
+      }
     }, 700);
   } else {
     // 拼寫有誤
@@ -706,46 +911,31 @@ function closeSpellingPrompt(cancelReorder = false) {
   if (dom.spellingPromptModal) {
     dom.spellingPromptModal.classList.remove('active');
   }
-  if (!cancelReorder && pendingAssessment) {
-    finishSpellingPrompt();
-  } else {
+  if (isBatchSpellingActive) {
+    // 使用者中途關閉集中測驗
+    isBatchSpellingActive = false;
+    if (dom.spellingBatchProgress) dom.spellingBatchProgress.style.display = 'none';
+    if (dom.spellingSkipBtn) dom.spellingSkipBtn.style.display = 'none';
     pendingAssessment = null;
-    triggerCardTransition('next');
+    showFeedbackBanner('info', '已暫停集中拼寫測驗，可隨時繼續刷卡或至選單調整');
+    if (sessionQueue.length === 0) {
+      openBatchCompleteModal();
+    } else {
+      triggerCardTransition('next');
+    }
+    return;
   }
+
+  // 即時模式關閉
+  pendingAssessment = null;
+  triggerCardTransition('next');
 }
 
 function finishSpellingPrompt() {
-  if (!pendingAssessment) return;
-  const { type, word } = pendingAssessment;
-
-  // 關閉彈窗
   if (dom.spellingPromptModal) {
     dom.spellingPromptModal.classList.remove('active');
   }
-
-  // 隊列重排邏輯
-  if (sessionQueue.length > 1) {
-    const currentCard = sessionQueue.splice(currentIndex, 1)[0];
-
-    if (type === 'hesitate') {
-      // 🟠 不熟/忘了：將字卡的排序往中間排序
-      const midOffset = Math.max(2, Math.floor(sessionQueue.length / 2));
-      const targetIndex = Math.min(sessionQueue.length, currentIndex + midOffset);
-      sessionQueue.splice(targetIndex, 0, currentCard);
-    } else if (type === 'stranger') {
-      // 🔴 陌生：將此字卡在 1~2 張卡片後排序
-      const nearOffset = Math.min(2, Math.max(1, sessionQueue.length));
-      const targetIndex = Math.min(sessionQueue.length, currentIndex + nearOffset);
-      sessionQueue.splice(targetIndex, 0, currentCard);
-    }
-  }
-
-  if (currentIndex >= sessionQueue.length) {
-    currentIndex = 0;
-  }
-
   pendingAssessment = null;
-  updateStats();
   triggerCardTransition('next');
 }
 
@@ -791,6 +981,9 @@ function repeatCurrentBatch() {
   // 重新裝載上一批次的單字
   sessionQueue = [...sessionInitialBatch];
   currentIndex = 0;
+  pendingSpellingQueue = [];
+  cardsEvaluatedInInterval = 0;
+  isBatchSpellingActive = false;
   updateStats();
   renderCurrentCard();
 }
@@ -1539,6 +1732,8 @@ window.closeEtymologyGuide = closeEtymologyGuide;
 window.popNavigationHistory = popNavigationHistory;
 window.jumpToWordWithHistory = jumpToWordWithHistory;
 window.clearDictSearch = clearDictSearch;
+window.changeSpellingOptin = changeSpellingOptin;
+window.skipCurrentSpellingWord = skipCurrentSpellingWord;
 
 // 頁面加載完成後啟動
 document.addEventListener('DOMContentLoaded', initApp);

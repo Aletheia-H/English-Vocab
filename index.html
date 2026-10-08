@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#1c2e26">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="style.css?v=20261009_dict_v3">
+  <link rel="stylesheet" href="style.css?v=20261009_spell_v4">
 </head>
 <body>
 
@@ -54,10 +54,10 @@
           </button>
         </div>
 
-        <!-- 本次練習數量選擇列 (Requirement 1) -->
+        <!-- 本次練習數量與拼寫模式選擇列 -->
         <div class="session-control-bar">
           <div class="batch-selector-wrap">
-            <label for="batchSizeSelect">🎯 本次練習量：</label>
+            <label for="batchSizeSelect">🎯 練習量：</label>
             <select id="batchSizeSelect" class="batch-select" onchange="changeBatchSize(this.value)">
               <option value="10">10 張</option>
               <option value="20" selected>20 張</option>
@@ -67,9 +67,21 @@
               <option value="all">全部單字</option>
             </select>
             <button class="shuffle-btn" onclick="reshuffleBatch()" title="隨機換一批單字" aria-label="隨機換一批單字">
-              🔀 隨機換批
+              🔀 換批
             </button>
           </div>
+
+          <div class="spelling-optin-wrap">
+            <label for="spellingOptinSelect">✏️ 拼寫：</label>
+            <select id="spellingOptinSelect" class="batch-select" onchange="changeSpellingOptin(this.value)">
+              <option value="every_5" selected>🎯 每 5 張集中</option>
+              <option value="every_10">🎯 每 10 張集中</option>
+              <option value="immediate">⚡ 即時測驗</option>
+              <option value="batch_end">🏁 整批結束時</option>
+              <option value="off">🚫 關閉 (純刷卡)</option>
+            </select>
+          </div>
+
           <div class="session-count-indicator">
             卡片：<b id="sessionCardIndex">1</b> / <span id="sessionTotalCount">20</span>
           </div>
@@ -295,6 +307,7 @@
     <div class="spelling-prompt-box">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <span class="prompt-title-badge" id="spellingPromptBadge">✏️ 加深記憶・引導拼寫練習</span>
+        <span class="spelling-batch-progress" id="spellingBatchProgress" style="display:none;"></span>
         <button class="modal-close-btn" style="position:static; margin-left:auto;" onclick="closeSpellingPrompt(false)" title="關閉">✕</button>
       </div>
 
@@ -313,6 +326,7 @@
       <div class="spell-actions-row">
         <button class="spell-hint-btn" onclick="playSpellingPromptAudio()">🔊 聽音提示</button>
         <button class="spell-hint-btn" onclick="revealSpellingPromptAnswer()">💡 顯示全字</button>
+        <button class="spell-hint-btn" id="spellingSkipBtn" onclick="skipCurrentSpellingWord()" style="display:none;">⏭️ 跳過此字</button>
       </div>
 
       <div id="spellingPromptFeedback" style="font-size:0.85rem; min-height:1.2rem; font-weight:600; color:var(--chalk-yellow);"></div>
@@ -817,7 +831,7 @@
     </div>
   </div>
 
-  <script src="data.js?v=20261009_dict_v3"></script>
-  <script src="app.js?v=20261009_dict_v3"></script>
+  <script src="data.js?v=20261009_spell_v4"></script>
+  <script src="app.js?v=20261009_spell_v4"></script>
 </body>
 </html>
