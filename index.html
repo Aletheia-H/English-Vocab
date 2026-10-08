@@ -31,7 +31,13 @@
         <!-- 分類滑動藥丸標籤列 (Category Scroll) -->
         <nav class="category-scroll-wrapper" aria-label="單字分級類別">
           <div class="category-pills" id="categoryPills">
-            <!-- 由 app.js 動態構建 -->
+            <button class="pill-item active" data-cat="all" onclick="switchCategory('all')">✨ 全部分類</button>
+            <button class="pill-item" data-cat="junior_2000" onclick="switchCategory('junior_2000')">🎒 國中 2000</button>
+            <button class="pill-item" data-cat="senior_7000" onclick="switchCategory('senior_7000')">🏫 高中 7000</button>
+            <button class="pill-item" data-cat="toefl" onclick="switchCategory('toefl')">📕 托福 TOEFL</button>
+            <button class="pill-item" data-cat="gre" onclick="switchCategory('gre')">🎓 GRE 思辨</button>
+            <button class="pill-item" data-cat="business" onclick="switchCategory('business')">💼 商務 TOEIC</button>
+            <button class="pill-item" data-cat="reading_daily" onclick="switchCategory('reading_daily')">☕ 專欄閱讀</button>
           </div>
         </nav>
 
@@ -110,7 +116,11 @@
           <article class="flashcard" id="flashcard">
             <!-- 正面 -->
             <div class="card-face card-front" id="cardFront">
-              <!-- JS 動態渲染 -->
+              <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; padding: 30px;">
+                <div style="font-size: 2.2rem; margin-bottom: 12px;">⏳</div>
+                <div style="font-size: 1.15rem; font-weight: bold; color: var(--chalk-yellow);">黑板單字庫準備中...</div>
+                <div style="font-size: 0.82rem; color: var(--chalk-faint); margin-top: 6px;">正在調度 36,000 深度單字庫</div>
+              </div>
             </div>
             <!-- 背面 -->
             <div class="card-face card-back" id="cardBack">

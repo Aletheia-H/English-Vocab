@@ -137,7 +137,8 @@ function saveCustomWords(words) {
 
 function loadStoredData() {
   const customWords = getCustomWords();
-  vocabList = [...INITIAL_VOCAB_DATA, ...customWords];
+  const baseData = (typeof INITIAL_VOCAB_DATA !== 'undefined') ? INITIAL_VOCAB_DATA : [];
+  vocabList = [...baseData, ...customWords];
 }
 
 // ===================================================================
@@ -146,6 +147,7 @@ function loadStoredData() {
 function buildCategoryPills() {
   const container = dom.categoryPills;
   if (!container) return;
+  if (typeof CATEGORY_DEFINITIONS === 'undefined') return;
   container.innerHTML = '';
 
   // 全部分類標籤
