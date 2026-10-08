@@ -1282,33 +1282,11 @@ function revealSpelling() {
 // ===================================================================
 
 function buildDictScopePills() {
-  if (!dom.dictScopeSelector) return;
-  dom.dictScopeSelector.innerHTML = '';
-
-  const scopes = [
-    { id: 'all', label: '✨ 全庫 36,000 字' },
-    { id: 'junior_2000', label: '🎒 國中 2000' },
-    { id: 'senior_7000', label: '🏫 高中 7000' },
-    { id: 'toefl', label: '📕 托福 10000' },
-    { id: 'gre', label: '🎓 GRE 2000' },
-    { id: 'business', label: '💼 商務多益 5000' },
-    { id: 'reading_daily', label: '☕ 專欄 10000' }
-  ];
-
-  scopes.forEach(sc => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = `dict-scope-pill ${currentDictScope === sc.id ? 'active' : ''}`;
-    btn.innerText = sc.label;
-    btn.onclick = () => {
-      currentDictScope = sc.id;
-      document.querySelectorAll('.dict-scope-pill').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      const val = dom.dictSearchInput ? dom.dictSearchInput.value : '';
-      renderDictionaryList(val);
-    };
-    dom.dictScopeSelector.appendChild(btn);
-  });
+  // 字典已升級為全庫 36,000 字直接速查，無須分類篩選列
+  if (dom.dictScopeSelector) {
+    dom.dictScopeSelector.innerHTML = '';
+    dom.dictScopeSelector.style.display = 'none';
+  }
 }
 
 function clearDictSearch() {
@@ -1330,15 +1308,11 @@ function renderDictionaryList(query = '') {
     dom.dictClearBtn.style.display = rawQuery.length > 0 ? 'flex' : 'none';
   }
 
-  // 1. 根據分類範圍篩選候選池
-  let candidatePool = vocabList;
-  if (currentDictScope !== 'all') {
-    candidatePool = vocabList.filter(item => item.category === currentDictScope);
-  }
+  // 1. 直接以全庫 36,000 完整字庫為檢索池（不選分類，直接速查全庫）
+  const candidatePool = vocabList;
 
   if (dom.dictTotalCountBadge) {
-    const scopeName = currentDictScope === 'all' ? '全庫 36,000 字' : ((typeof CATEGORY_DEFINITIONS !== 'undefined' && CATEGORY_DEFINITIONS[currentDictScope]?.shortLabel) || currentDictScope);
-    dom.dictTotalCountBadge.innerText = `檢索範圍：${scopeName} (${candidatePool.length.toLocaleString()} 詞)`;
+    dom.dictTotalCountBadge.innerText = `全庫 ${candidatePool.length.toLocaleString()} 字`;
   }
 
   // 2. 無搜尋詞時：展示指引與精選探索
@@ -1753,7 +1727,7 @@ function switchMode(mode) {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
 
-  if (dom.flashcardView) dom.flashcardView.style.display = mode === 'flashcard' ? 'block' : 'none';
+  if (dom.flashcardView) dom.flashcardView.style.display = mode === 'flashcard' ? 'flex' : 'none';
   if (dom.dictionaryView) dom.dictionaryView.style.display = mode === 'dictionary' ? 'flex' : 'none';
 
   if (mode === 'flashcard') {
@@ -1762,6 +1736,9 @@ function switchMode(mode) {
   if (mode === 'dictionary') {
     const val = dom.dictSearchInput ? dom.dictSearchInput.value : '';
     renderDictionaryList(val);
+    setTimeout(() => {
+      if (dom.dictSearchInput) dom.dictSearchInput.focus();
+    }, 60);
   }
 
   updateHistoryNavBar();
