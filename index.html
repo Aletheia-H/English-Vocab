@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#1c2e26">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="style.css?v=20261009_etym_v2">
+  <link rel="stylesheet" href="style.css?v=20261009_dict_v3">
 </head>
 <body>
 
@@ -109,6 +109,14 @@
            視圖 1: 核心字卡記憶 (Flashcard View)
            ============================================== -->
       <div id="flashcardView" style="display: block; width: 100%;">
+        <!-- 單字穿透查看時的歷史返回導航列 (Navigation History Back Bar) -->
+        <div id="cardHistoryNavBar" class="card-history-navbar" style="display: none;">
+          <button class="nav-back-btn" onclick="popNavigationHistory()" title="返回上一字 (快捷鍵: Esc 或 Backspace)">
+            ⬅️ 返回上一字：<span id="navBackWordTitle"></span>
+          </button>
+          <span class="nav-depth-badge" id="navDepthBadge">深層字彙穿透</span>
+        </div>
+
         <!-- 手機滑動提示 -->
         <div class="mobile-swipe-indicator">
           <span>👈 往左滑：非常熟悉 (下張)</span>
@@ -140,8 +148,8 @@
           </article>
         </div>
 
-        <!-- 艾賓浩斯記憶法 底部互動控制盤 (Requirement 3: 三大選項) -->
-        <footer class="memory-actions" style="grid-template-columns: 1fr 1fr 1fr;">
+        <!-- 艾賓浩斯記憶法 底部互動控制盤 (Requirement 3: 三大選項 - 常駐吸底 Sticky Dock) -->
+        <footer class="memory-actions" id="memoryActionsDock" style="grid-template-columns: 1fr 1fr 1fr;">
           <button class="action-btn btn-again" onclick="handleCardAssessment('stranger')" aria-label="陌生">
             <span>🔴 陌生</span>
             <span class="btn-subtext">1~2張後・拼寫練習</span>
@@ -158,13 +166,34 @@
       </div>
 
       <!-- ==============================================
-           視圖 3: 字典速查模式 (Dictionary View)
+           視圖 3: 36,000 全庫字典速查模式 (36K Authority Dictionary View)
            ============================================== -->
       <div id="dictionaryView" class="dictionary-view" style="display: none;">
+        <div class="dict-header-banner">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="dict-title-badge">📚 全庫 36,000 字典速查</span>
+            <span class="dict-count-pill" id="dictTotalCountBadge">全庫 36,000 字</span>
+          </div>
+          <div class="dict-subtitle-hint">
+            即打即查・支援完全吻合置頂排序、中文翻譯與例句關鍵字檢索・點擊查看單字卡
+          </div>
+        </div>
+
+        <!-- 字典專屬分類篩選切換標籤 -->
+        <div class="dict-scope-selector" id="dictScopeSelector">
+          <!-- JS 動態生成篩選分類 -->
+        </div>
+
         <div class="search-box-wrap">
           <span class="search-icon-fixed">🔍</span>
-          <input type="text" id="dictSearchInput" class="search-input" placeholder="搜尋單字、中文釋義、例句關鍵字..." autocomplete="off">
+          <input type="text" id="dictSearchInput" class="search-input" placeholder="鍵入英文單字、中文釋義或例句關鍵字..." autocomplete="off">
+          <button id="dictClearBtn" class="search-clear-btn" style="display:none;" onclick="clearDictSearch()" title="清除搜尋">✕</button>
         </div>
+
+        <div id="dictSearchStats" class="dict-search-stats">
+          載入 36,000 完整字庫中...
+        </div>
+
         <div class="dict-list" id="dictList">
           <!-- JS 動態渲染 -->
         </div>
@@ -788,7 +817,7 @@
     </div>
   </div>
 
-  <script src="data.js?v=20261009_etym_v2"></script>
-  <script src="app.js?v=20261009_etym_v2"></script>
+  <script src="data.js?v=20261009_dict_v3"></script>
+  <script src="app.js?v=20261009_dict_v3"></script>
 </body>
 </html>

@@ -25,6 +25,11 @@ let isCardFlipped = false;
 let sessionMasteredCount = 0;
 let pendingAssessment = null; // { type: 'hesitate' | 'stranger', word: Object }
 
+// 歷史導航棧與 36K 字典全庫搜尋狀態
+let navigationHistory = []; // Stack of { word, fromMode, isFlipped, queueIndex }
+let currentDictScope = 'all'; // 'all' | 'junior_2000' | 'senior_7000' | 'toefl' | 'gre' | 'business' | 'reading_daily'
+let dictDebounceTimer = null;
+
 // 手機觸控座標
 let touchStartX = 0;
 let touchStartY = 0;
@@ -48,6 +53,11 @@ function initDomReferences() {
     reviewStatCount: document.getElementById('reviewStatCount'),
     categoryDescText: document.getElementById('categoryDescText'),
     
+    // 歷史導航條
+    cardHistoryNavBar: document.getElementById('cardHistoryNavBar'),
+    navBackWordTitle: document.getElementById('navBackWordTitle'),
+    navDepthBadge: document.getElementById('navDepthBadge'),
+
     // 批次計數器
     batchSizeSelect: document.getElementById('batchSizeSelect'),
     sessionCardIndex: document.getElementById('sessionCardIndex'),
@@ -58,6 +68,14 @@ function initDomReferences() {
     spellingView: document.getElementById('spellingView'),
     dictionaryView: document.getElementById('dictionaryView'),
     
+    // 36,000 字典速查組件
+    dictSearchInput: document.getElementById('dictSearchInput'),
+    dictClearBtn: document.getElementById('dictClearBtn'),
+    dictSearchStats: document.getElementById('dictSearchStats'),
+    dictScopeSelector: document.getElementById('dictScopeSelector'),
+    dictTotalCountBadge: document.getElementById('dictTotalCountBadge'),
+    dictList: document.getElementById('dictList'),
+
     // 彈窗
     milestoneModal: document.getElementById('milestoneModal'),
     customWordModal: document.getElementById('customWordModal'),
@@ -84,6 +102,7 @@ function initApp() {
   initDomReferences();
   loadStoredData();
   buildCategoryPills();
+  buildDictScopePills();
   setupEventListeners();
 
   // 預設讀取批次設定
@@ -402,11 +421,12 @@ function renderCurrentCard() {
           
           ${synonymsList.length > 0 ? `
             <div style="margin-top:3px;">
-              <span style="font-size:0.75rem; color:var(--chalk-green); font-weight:600;">✨ 相似詞 (點擊聽音)：</span>
+              <span style="font-size:0.75rem; color:var(--chalk-green); font-weight:600;">✨ 相似詞 (點擊看字卡・喇叭聽音)：</span>
               <div class="chips-grid">
                 ${synonymsList.map(s => `
-                  <span class="word-chip synonym" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(s)}')">
-                    ${s} 🔊
+                  <span class="word-chip synonym" onclick="event.stopPropagation(); jumpToWordWithHistory(null, '${escapeQuotes(s)}')">
+                    <span>${s}</span>
+                    <span class="chip-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(s)}')">🔊</span>
                   </span>
                 `).join('')}
               </div>
@@ -415,11 +435,12 @@ function renderCurrentCard() {
 
           ${antonymsList.length > 0 ? `
             <div style="margin-top:6px;">
-              <span style="font-size:0.75rem; color:var(--chalk-pink); font-weight:600;">⚡ 相反詞 (點擊聽音)：</span>
+              <span style="font-size:0.75rem; color:var(--chalk-pink); font-weight:600;">⚡ 相反詞 (點擊看字卡・喇叭聽音)：</span>
               <div class="chips-grid">
                 ${antonymsList.map(a => `
-                  <span class="word-chip antonym" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(a)}')">
-                    ${a} 🔊
+                  <span class="word-chip antonym" onclick="event.stopPropagation(); jumpToWordWithHistory(null, '${escapeQuotes(a)}')">
+                    <span>${a}</span>
+                    <span class="chip-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(a)}')">🔊</span>
                   </span>
                 `).join('')}
               </div>
@@ -466,19 +487,19 @@ function renderCurrentCard() {
             ` : ''}
           </div>
 
-          <!-- 同字根家族延伸 (精選 3 實用例與個別字拆解・點擊發音) -->
+          <!-- 同字根家族延伸 (精選 3 實用例與個別字拆解・點擊看字卡／聽音) -->
           ${(word.etymology.rootFamily && word.etymology.rootFamily.length > 0) ? `
             <div class="family-examples-section">
               <div class="family-examples-title">
-                🌱 同字根家族單字拆解（精選 3 例・點擊聽音）：
+                🌱 同字根家族單字拆解（精選 3 例・點擊看字卡／聽音）：
               </div>
               <div class="family-examples-list">
                 ${word.etymology.rootFamily.slice(0, 3).map(fam => `
-                  <div class="family-example-card" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(fam.word)}')">
+                  <div class="family-example-card" onclick="event.stopPropagation(); jumpToWordWithHistory(null, '${escapeQuotes(fam.word)}')">
                     <div class="family-card-top">
                       <div class="family-word-name">
                         <span class="f-name">${fam.word}</span>
-                        <span class="f-audio-tag">🔊 聽音</span>
+                        <span class="f-audio-tag" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(fam.word)}')">🔊 聽音</span>
                       </div>
                       <div class="family-meaning-text">${fam.meaning}</div>
                     </div>
@@ -501,11 +522,12 @@ function renderCurrentCard() {
     </div>
   `;
 
-  // 更新計數指示
+  // 更新計數指示與歷史導航列
   if (dom.sessionCardIndex && dom.sessionTotalCount) {
     dom.sessionCardIndex.innerText = Math.min(currentIndex + 1, sessionQueue.length);
     dom.sessionTotalCount.innerText = sessionQueue.length;
   }
+  updateHistoryNavBar();
 }
 
 function renderEmptyCard() {
@@ -974,45 +996,294 @@ function revealSpelling() {
 }
 
 // ===================================================================
-// 10. 字典速查視圖 (Dictionary Tab Mode)
+// 10. 36,000 字典全庫智能加權檢索系統 (36K Authority Dictionary System)
 // ===================================================================
-function renderDictionaryList(query = '') {
-  const listEl = document.getElementById('dictList');
-  if (!listEl) return;
 
-  const q = query.trim().toLowerCase();
-  const filtered = vocabList.filter(item => {
-    return item.word.toLowerCase().includes(q) ||
-           (item.translation || '').includes(q) ||
-           (item.exampleSentence || '').toLowerCase().includes(q);
+function buildDictScopePills() {
+  if (!dom.dictScopeSelector) return;
+  dom.dictScopeSelector.innerHTML = '';
+
+  const scopes = [
+    { id: 'all', label: '✨ 全庫 36,000 字' },
+    { id: 'junior_2000', label: '🎒 國中 2000' },
+    { id: 'senior_7000', label: '🏫 高中 7000' },
+    { id: 'toefl', label: '📕 托福 10000' },
+    { id: 'gre', label: '🎓 GRE 2000' },
+    { id: 'business', label: '💼 商務多益 5000' },
+    { id: 'reading_daily', label: '☕ 專欄 10000' }
+  ];
+
+  scopes.forEach(sc => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `dict-scope-pill ${currentDictScope === sc.id ? 'active' : ''}`;
+    btn.innerText = sc.label;
+    btn.onclick = () => {
+      currentDictScope = sc.id;
+      document.querySelectorAll('.dict-scope-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const val = dom.dictSearchInput ? dom.dictSearchInput.value : '';
+      renderDictionaryList(val);
+    };
+    dom.dictScopeSelector.appendChild(btn);
   });
+}
 
-  const toRender = filtered.slice(0, 60);
-  listEl.innerHTML = toRender.map(item => {
-    return `
-      <div class="dict-item-card" onclick="jumpToWord('${item.id}')">
-        <div>
-          <span class="dict-word-text">${item.word}</span>
-          <span style="font-size:0.75rem; color:var(--chalk-cyan); margin-left:6px;">${(item.partOfSpeech || []).join(' ')}</span>
-        </div>
-        <div class="dict-word-zh">${item.translation}</div>
+function clearDictSearch() {
+  if (dom.dictSearchInput) {
+    dom.dictSearchInput.value = '';
+    if (dom.dictClearBtn) dom.dictClearBtn.style.display = 'none';
+    dom.dictSearchInput.focus();
+    renderDictionaryList('');
+  }
+}
+
+function renderDictionaryList(query = '') {
+  if (!dom.dictList) return;
+
+  const rawQuery = (query || '').trim();
+  const q = rawQuery.toLowerCase();
+
+  if (dom.dictClearBtn) {
+    dom.dictClearBtn.style.display = rawQuery.length > 0 ? 'flex' : 'none';
+  }
+
+  // 1. 根據分類範圍篩選候選池
+  let candidatePool = vocabList;
+  if (currentDictScope !== 'all') {
+    candidatePool = vocabList.filter(item => item.category === currentDictScope);
+  }
+
+  if (dom.dictTotalCountBadge) {
+    const scopeName = currentDictScope === 'all' ? '全庫 36,000 字' : ((typeof CATEGORY_DEFINITIONS !== 'undefined' && CATEGORY_DEFINITIONS[currentDictScope]?.shortLabel) || currentDictScope);
+    dom.dictTotalCountBadge.innerText = `檢索範圍：${scopeName} (${candidatePool.length.toLocaleString()} 詞)`;
+  }
+
+  // 2. 無搜尋詞時：展示指引與精選探索
+  if (!q) {
+    const initialSample = candidatePool.slice(0, 40);
+    if (dom.dictSearchStats) {
+      dom.dictSearchStats.innerHTML = `
+        <span>📚 <b>${candidatePool.length.toLocaleString()}</b> 筆深度字庫就緒</span>
+        <span style="color:var(--chalk-dim);">請輸入單字拼寫、中文釋義或關鍵字</span>
+      `;
+    }
+
+    dom.dictList.innerHTML = initialSample.map(item => renderDictCardHtml(item)).join('') + `
+      <div style="text-align:center; padding:16px 10px; font-size:0.75rem; color:var(--chalk-faint);">
+        💡 請在上方鍵入欲查詢的英文單字或中文釋義，系統將自 <b>36,000</b> 筆大字典庫中即時加權檢索！
       </div>
     `;
-  }).join('') + (filtered.length > 60 ? `
+    return;
+  }
+
+  // 3. 智能加權計算引擎 (Exact Match > Prefix Match > Includes > Translation > Sentence)
+  const scoredItems = [];
+  const qLen = q.length;
+
+  for (let i = 0; i < candidatePool.length; i++) {
+    const item = candidatePool[i];
+    const w = item.word.toLowerCase();
+    const trans = (item.translation || '').toLowerCase();
+    let score = 0;
+    let matchType = '';
+
+    if (w === q) {
+      // 🥇 完全吻合 (最高優先級，置頂第一)
+      score = 1000;
+      matchType = '完全吻合';
+    } else if (w.startsWith(q)) {
+      // 🥈 字首吻合 (長度越短越優先)
+      score = 800 - Math.min(100, (w.length - qLen) * 5);
+      matchType = '字首相符';
+    } else if (w.includes(q)) {
+      // 🥉 單字包含
+      score = 500 - Math.min(100, (w.length - qLen) * 2);
+      matchType = '拼寫包含';
+    } else if (trans.startsWith(q)) {
+      // 🏅 中文開頭吻合
+      score = 400;
+      matchType = '釋義相符';
+    } else if (trans.includes(q)) {
+      // 🏅 中文包含
+      score = 300;
+      matchType = '釋義包含';
+    } else if (qLen >= 3 && (item.exampleSentence || '').toLowerCase().includes(q)) {
+      // 🎖️ 例句包含 (短詞不觸發，避免噪音)
+      score = 100;
+      matchType = '例句出現';
+    }
+
+    if (score > 0) {
+      scoredItems.push({ item, score, matchType });
+    }
+  }
+
+  // 降序排序
+  scoredItems.sort((a, b) => b.score - a.score);
+
+  // 統計橫幅更新
+  if (dom.dictSearchStats) {
+    dom.dictSearchStats.innerHTML = `
+      <span>🔍 找到 <b>${scoredItems.length.toLocaleString()}</b> 筆符合結果</span>
+      <span style="color:var(--chalk-cyan);">優先排序：完全吻合與字首命中</span>
+    `;
+  }
+
+  if (scoredItems.length === 0) {
+    dom.dictList.innerHTML = `
+      <div style="text-align:center; padding:30px 10px; color:var(--chalk-dim);">
+        <div style="font-size:2rem; margin-bottom:8px;">🔍</div>
+        <div style="font-size:0.95rem; font-weight:bold; color:var(--chalk-yellow);">查無符合「${escapeQuotes(rawQuery)}」的字詞</div>
+        <p style="font-size:0.78rem; margin-top:6px; color:var(--chalk-faint);">
+          請檢查拼字是否正確，或切換上方分類範圍為「✨ 全庫 36,000 字」重新查詢。
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  // 渲染前 80 筆最相關結果
+  const displaySlice = scoredItems.slice(0, 80);
+  dom.dictList.innerHTML = displaySlice.map(entry => renderDictCardHtml(entry.item, entry.matchType, q)).join('') + (scoredItems.length > 80 ? `
     <div style="text-align:center; padding:12px; font-size:0.75rem; color:var(--chalk-faint);">
-      已顯示前 60 筆結果（共 ${filtered.length} 筆，請輸入更多關鍵字以精確篩選）
+      已呈現最相關之首 80 筆結果（共 ${scoredItems.length.toLocaleString()} 筆，輸入更多字母即可精確定位）
     </div>
   ` : '');
 }
 
-function jumpToWord(wordId) {
-  const target = vocabList.find(v => v.id === wordId);
-  if (target) {
-    sessionQueue = [target, ...sessionQueue.filter(v => v.id !== wordId)];
-    currentIndex = 0;
+function renderDictCardHtml(item, matchType = '', query = '') {
+  const catDef = (typeof CATEGORY_DEFINITIONS !== 'undefined') ? CATEGORY_DEFINITIONS[item.category] : null;
+  const catBadge = catDef ? catDef.shortLabel : (item.category || '');
+
+  // 高亮關鍵字
+  let wordDisplay = item.word;
+  if (query && item.word.toLowerCase().includes(query)) {
+    const reg = new RegExp(`(${query})`, 'gi');
+    wordDisplay = item.word.replace(reg, '<span style="color:var(--chalk-yellow); text-decoration:underline;">$1</span>');
+  }
+
+  return `
+    <div class="dict-item-card" onclick="jumpToWordWithHistory('${item.id}', '${escapeQuotes(item.word)}')">
+      <div class="dict-card-left">
+        <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+          <span class="dict-word-text">${wordDisplay}</span>
+          <span class="dict-cat-tag">${catBadge}</span>
+          <span style="font-size:0.74rem; color:var(--chalk-cyan);">${(item.partOfSpeech || []).join(' ')} ${item.kkPhonetic || ''}</span>
+          ${matchType ? `<span style="font-size:0.65rem; color:var(--chalk-green); background:rgba(46,204,113,0.12); padding:1px 5px; border-radius:4px;">${matchType}</span>` : ''}
+        </div>
+        <div class="dict-word-zh">${item.translation}</div>
+      </div>
+      <div class="dict-action-group" onclick="event.stopPropagation();">
+        <button class="dict-audio-btn" onclick="playPronunciation('${escapeQuotes(item.word)}')">
+          🔊 聽音
+        </button>
+        <button class="dict-view-card-btn" onclick="jumpToWordWithHistory('${item.id}', '${escapeQuotes(item.word)}')">
+          👉 字卡
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// ===================================================================
+// 單字深層穿透查看與歷史導航棧 (Navigation Stack & Deep Linking)
+// ===================================================================
+
+function jumpToWordWithHistory(wordId, wordText = '') {
+  // 1. 定位目標單字
+  let target = null;
+  if (wordId) {
+    target = vocabList.find(v => v.id === wordId);
+  }
+  if (!target && wordText) {
+    const cleanWord = wordText.trim().toLowerCase();
+    target = vocabList.find(v => v.word.toLowerCase() === cleanWord);
+  }
+
+  if (!target) {
+    alert(`在 36,000 字庫中未找到「${wordText}」的獨立字卡！`);
+    return;
+  }
+
+  // 2. 記錄目前單字進度至歷史棧
+  const currentWord = getCurrentWord();
+  if (currentWord && currentWord.id !== target.id) {
+    navigationHistory.push({
+      word: currentWord,
+      fromMode: currentMode,
+      isFlipped: isCardFlipped,
+      queueIndex: currentIndex
+    });
+  }
+
+  // 3. 將目標單字動態插入當前隊列最前排
+  sessionQueue.splice(currentIndex, 0, target);
+  isCardFlipped = false;
+
+  // 4. 切換為字卡視圖並渲染
+  if (currentMode !== 'flashcard') {
     switchMode('flashcard');
+  } else {
     renderCurrentCard();
   }
+
+  updateHistoryNavBar();
+}
+
+function popNavigationHistory() {
+  if (navigationHistory.length === 0) return;
+
+  const prevState = navigationHistory.pop();
+
+  // 若原先插入的探索引導單字存在，自隊列中移除當前深入字
+  if (sessionQueue.length > 1) {
+    sessionQueue.splice(currentIndex, 1);
+  }
+
+  // 定位回到原單字
+  const prevIdx = sessionQueue.findIndex(w => w.id === prevState.word.id);
+  if (prevIdx !== -1) {
+    currentIndex = prevIdx;
+  }
+
+  // 恢復翻面狀態與視圖模式
+  if (prevState.fromMode === 'dictionary') {
+    switchMode('dictionary');
+  } else {
+    if (currentMode !== 'flashcard') {
+      switchMode('flashcard');
+    }
+    isCardFlipped = prevState.isFlipped;
+    renderCurrentCard();
+    if (dom.flashcard) {
+      dom.flashcard.classList.toggle('is-flipped', isCardFlipped);
+    }
+  }
+
+  updateHistoryNavBar();
+}
+
+function updateHistoryNavBar() {
+  if (!dom.cardHistoryNavBar) return;
+
+  if (navigationHistory.length > 0 && currentMode === 'flashcard') {
+    const last = navigationHistory[navigationHistory.length - 1];
+    dom.cardHistoryNavBar.style.display = 'flex';
+    if (dom.navBackWordTitle) {
+      dom.navBackWordTitle.innerText = `「${last.word.word}」`;
+    }
+    if (dom.navDepthBadge) {
+      dom.navDepthBadge.innerText = `深層探索 (第 ${navigationHistory.length} 層)`;
+    }
+  } else {
+    dom.cardHistoryNavBar.style.display = 'none';
+  }
+}
+
+// 舊版 jumpToWord 相容別名
+function jumpToWord(wordId) {
+  jumpToWordWithHistory(wordId);
 }
 
 // ===================================================================
@@ -1027,8 +1298,15 @@ function switchMode(mode) {
   if (dom.flashcardView) dom.flashcardView.style.display = mode === 'flashcard' ? 'block' : 'none';
   if (dom.dictionaryView) dom.dictionaryView.style.display = mode === 'dictionary' ? 'flex' : 'none';
 
-  if (mode === 'flashcard') renderCurrentCard();
-  if (mode === 'dictionary') renderDictionaryList();
+  if (mode === 'flashcard') {
+    renderCurrentCard();
+  }
+  if (mode === 'dictionary') {
+    const val = dom.dictSearchInput ? dom.dictSearchInput.value : '';
+    renderDictionaryList(val);
+  }
+
+  updateHistoryNavBar();
 }
 
 // ===================================================================
@@ -1194,8 +1472,16 @@ function setupEventListeners() {
       return;
     }
 
+    // 歷史導航快捷鍵：Esc 或在非輸入狀態下的 Backspace 可直接返回上一字
+    const isEditingInput = (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT');
+    if ((e.key === 'Escape' || (!isEditingInput && e.key === 'Backspace')) && navigationHistory.length > 0) {
+      e.preventDefault();
+      popNavigationHistory();
+      return;
+    }
+
     if (currentMode !== 'flashcard') return;
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (isEditingInput) return;
 
     if (e.code === 'Space') {
       e.preventDefault();
@@ -1220,11 +1506,14 @@ function setupEventListeners() {
 
   setupTouchEvents();
 
-  // 字典即時搜尋監聽
+  // 字典即時搜尋監聽 (120ms 防抖動，確保 36,000 筆即打即查絲滑流暢)
   const dictSearchInput = document.getElementById('dictSearchInput');
   if (dictSearchInput) {
     dictSearchInput.addEventListener('input', (e) => {
-      renderDictionaryList(e.target.value);
+      clearTimeout(dictDebounceTimer);
+      dictDebounceTimer = setTimeout(() => {
+        renderDictionaryList(e.target.value);
+      }, 120);
     });
   }
 }
@@ -1244,8 +1533,12 @@ function closeEtymologyGuide() {
   }
 }
 
+// 全域導出函式供 HTML 行內 onclick 調用
 window.openEtymologyGuide = openEtymologyGuide;
 window.closeEtymologyGuide = closeEtymologyGuide;
+window.popNavigationHistory = popNavigationHistory;
+window.jumpToWordWithHistory = jumpToWordWithHistory;
+window.clearDictSearch = clearDictSearch;
 
 // 頁面加載完成後啟動
 document.addEventListener('DOMContentLoaded', initApp);

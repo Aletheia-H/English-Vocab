@@ -298,6 +298,56 @@ body {
 }
 
 /* ===================================================================
+   歷史導航返回列 (Card Navigation History Bar)
+   =================================================================== */
+.card-history-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(246, 194, 62, 0.12);
+  border: 1px dashed var(--chalk-yellow);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  animation: fadeInDown 0.25s ease;
+}
+
+.nav-back-btn {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--chalk-yellow);
+  color: var(--chalk-yellow);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+.nav-back-btn:hover, .nav-back-btn:active {
+  background: var(--chalk-yellow);
+  color: #12201a;
+  box-shadow: 0 0 10px rgba(246, 194, 62, 0.4);
+}
+
+.nav-depth-badge {
+  font-size: 0.7rem;
+  color: var(--chalk-cyan);
+  background: rgba(52, 152, 219, 0.18);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===================================================================
    核心字卡區域 (Flashcard Deck & 3D Flip)
    =================================================================== */
 .card-scene {
@@ -305,9 +355,9 @@ body {
   z-index: 2;
   display: block;
   width: 100%;
-  height: 500px;
-  min-height: 460px;
-  margin: 6px 0 14px 0;
+  height: clamp(330px, calc(100dvh - 370px), 500px);
+  min-height: 320px;
+  margin: 4px 0 10px 0;
   perspective: 1200px;
   touch-action: pan-y;
   cursor: pointer;
@@ -640,11 +690,16 @@ body {
    艾賓浩斯記憶法 底部互動控制盤 (Spaced Repetition Controls)
    =================================================================== */
 .memory-actions {
-  position: relative;
-  z-index: 2;
+  position: sticky;
+  bottom: 0;
+  z-index: 25;
   display: grid;
   grid-template-columns: 1fr 1fr 1.2fr;
   gap: 8px;
+  background: linear-gradient(to top, rgba(14, 25, 20, 0.98) 75%, rgba(14, 25, 20, 0.4) 95%, transparent);
+  padding-top: 8px;
+  padding-bottom: 2px;
+  margin-top: auto;
 }
 
 .action-btn {
@@ -809,13 +864,74 @@ body {
 }
 
 /* ===================================================================
-   字典速查模式 (Dictionary Search Mode)
+   36,000 字典速查模式 (36K Authority Dictionary Search Mode)
    =================================================================== */
 .dictionary-view {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
+}
+
+.dict-header-banner {
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 3px solid var(--chalk-cyan);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.dict-title-badge {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--chalk-yellow);
+}
+
+.dict-count-pill {
+  font-size: 0.72rem;
+  color: var(--chalk-cyan);
+  background: rgba(52, 152, 219, 0.18);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  font-weight: 600;
+}
+
+.dict-subtitle-hint {
+  font-size: 0.75rem;
+  color: var(--chalk-dim);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.dict-scope-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.dict-scope-pill {
+  font-size: 0.74rem;
+  padding: 4px 9px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  color: var(--chalk-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.dict-scope-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--chalk-white);
+}
+.dict-scope-pill.active {
+  background: rgba(246, 194, 62, 0.18);
+  border: 1px solid var(--chalk-yellow);
+  color: var(--chalk-yellow);
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(246, 194, 62, 0.25);
 }
 
 .search-box-wrap {
@@ -825,16 +941,19 @@ body {
 
 .search-input {
   width: 100%;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.38);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
-  padding: 12px 14px 12px 38px;
+  padding: 11px 40px 11px 38px;
   color: var(--chalk-white);
   font-size: 0.95rem;
   outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
 }
 .search-input:focus {
   border-color: var(--chalk-yellow);
+  box-shadow: 0 0 10px rgba(246, 194, 62, 0.25);
 }
 
 .search-icon-fixed {
@@ -843,42 +962,141 @@ body {
   top: 50%;
   transform: translateY(-50%);
   color: var(--chalk-dim);
+  pointer-events: none;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: var(--chalk-dim);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.72rem;
+  transition: all 0.15s;
+}
+.search-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--chalk-white);
+}
+
+.dict-search-stats {
+  font-size: 0.75rem;
+  color: var(--chalk-faint);
+  padding: 0 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .dict-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 480px;
+  gap: 7px;
+  max-height: calc(100dvh - 350px);
+  min-height: 240px;
   overflow-y: auto;
   padding-right: 4px;
+  scrollbar-width: thin;
 }
 
 .dict-item-card {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.18s ease;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
-.dict-item-card:active {
-  background: rgba(248, 225, 120, 0.12);
+.dict-item-card:hover {
+  background: rgba(246, 194, 62, 0.12);
   border-color: var(--chalk-yellow);
+  transform: translateX(2px);
+}
+
+.dict-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
 .dict-word-text {
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-weight: 800;
+  font-size: 1.05rem;
   color: var(--chalk-white);
+  letter-spacing: 0.3px;
+}
+
+.dict-cat-tag {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--chalk-cyan);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  margin-left: 6px;
+  font-weight: 600;
 }
 
 .dict-word-zh {
   color: var(--chalk-yellow);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dict-action-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dict-audio-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--chalk-cyan);
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dict-audio-btn:hover {
+  background: rgba(52, 152, 219, 0.3);
+  color: #fff;
+}
+
+.dict-view-card-btn {
+  background: rgba(246, 194, 62, 0.15);
+  border: 1px solid var(--chalk-yellow);
+  color: var(--chalk-yellow);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.dict-view-card-btn:hover {
+  background: var(--chalk-yellow);
+  color: #12201a;
 }
 
 /* ===================================================================
@@ -1702,5 +1920,62 @@ body {
   font-size: 0.82rem;
   color: var(--chalk-dim);
   line-height: 1.55;
+}
+
+/* ===================================================================
+   行動裝置人體工學緊湊優化 (Mobile Compact Viewport Optimization)
+   =================================================================== */
+@media (max-width: 600px) {
+  .app-viewport {
+    padding: 6px 6px 12px 6px;
+  }
+
+  .chalkboard-container {
+    padding: 10px 10px 12px 10px;
+    border-width: 6px;
+  }
+
+  .board-header {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .category-scroll-wrapper {
+    padding: 0 0 4px 0;
+  }
+
+  .pill-item {
+    font-size: 0.76rem;
+    padding: 4px 8px;
+  }
+
+  .progress-bar-container {
+    margin: 6px 0 8px 0;
+  }
+
+  .card-scene {
+    height: clamp(300px, calc(100dvh - 340px), 480px);
+    min-height: 290px;
+    margin: 4px 0 8px 0;
+  }
+
+  .action-btn {
+    padding: 10px 6px;
+    font-size: 0.8rem;
+  }
+
+  .btn-subtext {
+    font-size: 0.64rem;
+  }
+
+  .memory-actions {
+    gap: 6px;
+    padding-top: 6px;
+  }
+
+  .dict-list {
+    max-height: calc(100dvh - 320px);
+    min-height: 220px;
+  }
 }
 
