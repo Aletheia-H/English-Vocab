@@ -428,39 +428,61 @@ function renderCurrentCard() {
         </div>
       ` : ''}
 
-      <!-- 相同字首生字舉例 3 個 (含中文解釋) -->
-      ${prefixList.length > 0 ? `
-        <div class="detail-section">
-          <span class="section-label">🌱 相同字首延伸生字 (舉例 3 個)</span>
-          <div style="display:flex; flex-direction:column; gap:4px; margin-top:2px;">
-            ${prefixList.map(item => `
-              <div class="morphology-item" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(item.word)}')">
-                <div>
-                  <span class="morphology-word">${item.word}</span>
-                  <span class="morphology-trans">${item.translation}</span>
-                </div>
-                <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(item.word)}')">🔊 念讀</button>
-              </div>
-            `).join('')}
+      <!-- 字首・字根・字尾 邏輯拆解與家族 (True Etymology Breakdown) -->
+      ${word.etymology ? `
+        <div class="detail-section etymology-section">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="section-label">🧩 字根字首邏輯拆解</span>
+            <button class="guide-mini-btn" onclick="event.stopPropagation(); openEtymologyGuide()">
+              📖 記憶法解析
+            </button>
           </div>
-        </div>
-      ` : ''}
 
-      <!-- 相同字尾生字舉例 3 個 (含中文解釋) -->
-      ${suffixList.length > 0 ? `
-        <div class="detail-section">
-          <span class="section-label">🌿 相同字尾延伸生字 (舉例 3 個)</span>
-          <div style="display:flex; flex-direction:column; gap:4px; margin-top:2px;">
-            ${suffixList.map(item => `
-              <div class="morphology-item" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(item.word)}')">
-                <div>
-                  <span class="morphology-word">${item.word}</span>
-                  <span class="morphology-trans">${item.translation}</span>
-                </div>
-                <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(item.word)}')">🔊 念讀</button>
+          <!-- 三零件拆解標籤與推導公式 -->
+          <div class="morph-formula-box">
+            <div class="morph-parts-row">
+              ${word.etymology.prefix ? `
+                <span class="morph-tag tag-prefix" title="字首改變方向/意思">
+                  [字首] <b>${word.etymology.prefix.part}</b> <small>(${word.etymology.prefix.meaning})</small>
+                </span>
+              ` : ''}
+              ${word.etymology.prefix && word.etymology.root ? `<span class="morph-plus">＋</span>` : ''}
+              ${word.etymology.root ? `
+                <span class="morph-tag tag-root" title="字根為核心實質意義">
+                  [字根] <b>${word.etymology.root.part}</b> <small>(${word.etymology.root.meaning})</small>
+                </span>
+              ` : ''}
+              ${word.etymology.suffix ? `
+                <span class="morph-plus">＋</span>
+                <span class="morph-tag tag-suffix" title="字尾決定詞性">
+                  [字尾] <b>${word.etymology.suffix.part}</b> <small>(${word.etymology.suffix.meaning})</small>
+                </span>
+              ` : ''}
+            </div>
+            ${word.etymology.formula ? `
+              <div class="morph-synthesis">
+                💡 <b>邏輯推導：</b>${word.etymology.formula}
               </div>
-            `).join('')}
+            ` : ''}
           </div>
+
+          <!-- 同字根家族延伸 (滾雪球速記) -->
+          ${(word.etymology.rootFamily && word.etymology.rootFamily.length > 0) ? `
+            <div style="margin-top:8px;">
+              <div style="font-size:0.75rem; color:var(--chalk-yellow); font-weight:600; margin-bottom:4px;">
+                🌱 同字根家族延伸（滾雪球記憶法・點擊聽音）：
+              </div>
+              <div class="family-chips-grid">
+                ${word.etymology.rootFamily.map(fam => `
+                  <div class="family-chip" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(fam.word)}')">
+                    <span class="family-word">${fam.word}</span>
+                    <span class="family-trans">${fam.meaning}</span>
+                    <span class="family-sound-icon">🔊</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
         </div>
       ` : ''}
 
@@ -1197,6 +1219,24 @@ function setupEventListeners() {
     });
   }
 }
+
+// 字首・字根・字尾記憶法指南彈窗
+function openEtymologyGuide() {
+  const modal = document.getElementById('etymologyGuideModal');
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
+
+function closeEtymologyGuide() {
+  const modal = document.getElementById('etymologyGuideModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+window.openEtymologyGuide = openEtymologyGuide;
+window.closeEtymologyGuide = closeEtymologyGuide;
 
 // 頁面加載完成後啟動
 document.addEventListener('DOMContentLoaded', initApp);

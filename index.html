@@ -49,6 +49,9 @@
           <button class="tab-btn" data-mode="dictionary" onclick="switchMode('dictionary')">
             📖 字典速查
           </button>
+          <button class="tab-btn guide-trigger-btn" onclick="openEtymologyGuide()" title="字首、字根、字尾邏輯記憶法解析">
+            🎓 字根字首指南
+          </button>
         </div>
 
         <!-- 本次練習數量選擇列 (Requirement 1) -->
@@ -304,6 +307,236 @@
         </button>
         <button class="action-btn btn-hesitate" style="width: 100%;" onclick="repeatCurrentBatch()">
           🔄 再次複習本組單字
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       彈窗 6: 字首・字根・字尾記憶法指南 (Etymology Guide Modal)
+       ============================================== -->
+  <div class="modal-overlay" id="etymologyGuideModal" onclick="if(event.target===this) closeEtymologyGuide()">
+    <div class="modal-content etymology-guide-dialog">
+      <button class="modal-close-btn" onclick="closeEtymologyGuide()">✕</button>
+      
+      <div class="guide-header">
+        <span class="guide-badge">📖 高效單字擴充術</span>
+        <h2 class="modal-title" style="color:var(--chalk-yellow); margin-top:4px;">
+          字首・字根・字尾 邏輯記憶法指南
+        </h2>
+        <p class="guide-intro">
+          字首、字根、字尾記憶法是一種將英文單字拆解成小零件、透過邏輯推導來快速擴增字彙量的高效學習方式。只要掌握核心零件，就能像滾雪球般輕鬆記住一整群單字！
+        </p>
+      </div>
+
+      <div class="guide-scrollable-body">
+        <!-- 模組 1: 三大核心概念 -->
+        <div class="guide-section">
+          <h3 class="guide-section-title">🌟 三大核心概念（Core Concepts）</h3>
+          <div class="core-concepts-grid">
+            <div class="concept-card prefix-card">
+              <div class="concept-head">
+                <span class="concept-tag tag-prefix">字首 Prefix</span>
+                <span class="concept-pos-hint">放在最前方</span>
+              </div>
+              <div class="concept-desc">
+                主要用來改變單字的<b>意思、方向、否定或程度</b>。
+              </div>
+              <div class="concept-example">
+                例：<code>im-</code> (向內), <code>ex-</code> (向外), <code>un-</code> (否定)
+              </div>
+            </div>
+
+            <div class="concept-card root-card">
+              <div class="concept-head">
+                <span class="concept-tag tag-root">字根 Root</span>
+                <span class="concept-pos-hint">核心主體（如部首）</span>
+              </div>
+              <div class="concept-desc">
+                單字的根本核心，帶有最主要的<b>實質本質意義</b>。
+              </div>
+              <div class="concept-example">
+                例：<code>port</code> (運送), <code>spect</code> (觀看), <code>ject</code> (投擲)
+              </div>
+            </div>
+
+            <div class="concept-card suffix-card">
+              <div class="concept-head">
+                <span class="concept-tag tag-suffix">字尾 Suffix</span>
+                <span class="concept-pos-hint">放在最後方</span>
+              </div>
+              <div class="concept-desc">
+                主要用來決定單字的<b>詞性與形態</b>。
+              </div>
+              <div class="concept-example">
+                例：<code>-able</code> (形容詞), <code>-tion</code> (名詞), <code>-ize</code> (動詞)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模組 2: 三步驟拆解法（以 immemorial 為經典示範） -->
+        <div class="guide-section">
+          <h3 class="guide-section-title">⚡ 三步驟拆解法（Step-by-Step Breakdown）</h3>
+          <div class="breakdown-demo-box">
+            <div class="breakdown-word-banner">
+              範例單字：<span class="highlight-word">immemorial</span> [ˌɪməˈmɔːriəl]
+            </div>
+            <div class="steps-flow">
+              <div class="step-card">
+                <div class="step-num">Step 1</div>
+                <div class="step-name">① 拆解零件</div>
+                <div class="step-body">
+                  找出頭身尾：<br>
+                  <span class="pill-prefix">im-</span> + <span class="pill-root">memor</span> + <span class="pill-suffix">-ial</span>
+                </div>
+              </div>
+              <div class="step-card">
+                <div class="step-num">Step 2</div>
+                <div class="step-name">② 理解涵義</div>
+                <div class="step-body">
+                  分別對照意義：<br>
+                  • <b>im-</b> ＝ 否定／無<br>
+                  • <b>memor</b> ＝ 記憶<br>
+                  • <b>-ial</b> ＝ 具…特性的 (adj.)
+                </div>
+              </div>
+              <div class="step-card">
+                <div class="step-num">Step 3</div>
+                <div class="step-name">③ 邏輯重組</div>
+                <div class="step-body">
+                  串聯整合意義：<br>
+                  「不 ＋ 記憶 ＋ 具有特性」<br>
+                  ➔ <b>無法追憶的、遠古的</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模組 3: 常用核心字根滾雪球家族 -->
+        <div class="guide-section">
+          <h3 class="guide-section-title">🚢 經典字根滾雪球家族演練（Word Families）</h3>
+          
+          <!-- 家族 1: port -->
+          <div class="family-accordion-item">
+            <div class="family-accordion-head">
+              <span class="family-root-badge">字根 port</span>
+              <span class="family-root-meaning">＝ 拿、帶、運送 (Latin portare)</span>
+            </div>
+            <div class="family-words-list">
+              <div class="family-word-row" onclick="playPronunciation('import')">
+                <span class="f-word">import 🔊</span>
+                <span class="f-formula">im- (向內) ＋ port (運送)</span>
+                <span class="f-trans">＝ 輸入、進口</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('export')">
+                <span class="f-word">export 🔊</span>
+                <span class="f-formula">ex- (向外) ＋ port (運送)</span>
+                <span class="f-trans">＝ 輸出、出口</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('portable')">
+                <span class="f-word">portable 🔊</span>
+                <span class="f-formula">port (運送) ＋ -able (可…的)</span>
+                <span class="f-trans">＝ 便攜的、可隨身攜帶的</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('transport')">
+                <span class="f-word">transport 🔊</span>
+                <span class="f-formula">trans- (跨越) ＋ port (運送)</span>
+                <span class="f-trans">＝ 運輸、交通運送</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('report')">
+                <span class="f-word">report 🔊</span>
+                <span class="f-formula">re- (回頭) ＋ port (帶回)</span>
+                <span class="f-trans">＝ 把消息帶回、報告</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('support')">
+                <span class="f-word">support 🔊</span>
+                <span class="f-formula">sub- (在下方) ＋ port (承載)</span>
+                <span class="f-trans">＝ 從下方支撐、支持</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 家族 2: spect -->
+          <div class="family-accordion-item" style="margin-top:10px;">
+            <div class="family-accordion-head">
+              <span class="family-root-badge">字根 spect</span>
+              <span class="family-root-meaning">＝ 看、視察 (Latin specere)</span>
+            </div>
+            <div class="family-words-list">
+              <div class="family-word-row" onclick="playPronunciation('inspect')">
+                <span class="f-word">inspect 🔊</span>
+                <span class="f-formula">in- (深入內部) ＋ spect (看)</span>
+                <span class="f-trans">＝ 深入細看、檢查視察</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('expect')">
+                <span class="f-word">expect 🔊</span>
+                <span class="f-formula">ex- (向外) ＋ spect (看)</span>
+                <span class="f-trans">＝ 向前張望、期待預期</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('respect')">
+                <span class="f-word">respect 🔊</span>
+                <span class="f-formula">re- (回頭) ＋ spect (看)</span>
+                <span class="f-trans">＝ 令人回頭再看、尊敬重視</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('prospect')">
+                <span class="f-word">prospect 🔊</span>
+                <span class="f-formula">pro- (向前) ＋ spect (看)</span>
+                <span class="f-trans">＝ 向前看的前景、展望</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('retrospect')">
+                <span class="f-word">retrospect 🔊</span>
+                <span class="f-formula">retro- (向後) ＋ spect (看)</span>
+                <span class="f-trans">＝ 回顧往昔、回想</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 家族 3: ject -->
+          <div class="family-accordion-item" style="margin-top:10px;">
+            <div class="family-accordion-head">
+              <span class="family-root-badge">字根 ject</span>
+              <span class="family-root-meaning">＝ 投、擲、拋出 (Latin jacere)</span>
+            </div>
+            <div class="family-words-list">
+              <div class="family-word-row" onclick="playPronunciation('reject')">
+                <span class="f-word">reject 🔊</span>
+                <span class="f-formula">re- (退回) ＋ ject (丟)</span>
+                <span class="f-trans">＝ 往回丟棄、拒絕</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('inject')">
+                <span class="f-word">inject 🔊</span>
+                <span class="f-formula">in- (入) ＋ ject (推入)</span>
+                <span class="f-trans">＝ 注射、注入</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('project')">
+                <span class="f-word">project 🔊</span>
+                <span class="f-formula">pro- (向前) ＋ ject (投擲)</span>
+                <span class="f-trans">＝ 向前投射光影、企劃項目</span>
+              </div>
+              <div class="family-word-row" onclick="playPronunciation('eject')">
+                <span class="f-word">eject 🔊</span>
+                <span class="f-formula">e- (出) ＋ ject (丟)</span>
+                <span class="f-trans">＝ 逐出、彈射出來</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模組 4: 大考實戰指引 -->
+        <div class="guide-section">
+          <h3 class="guide-section-title">🎯 大考實戰應用（多益 / 學測 / 托福 GRE）</h3>
+          <div class="exam-tips-box">
+            <p>• <b>遇到從沒背過的長難字時：</b>先冷靜用「三步驟拆解法」尋找字首與字尾，剝除修飾成分後找出核心字根，即使不知道確切中文，也能百分之百推導出詞性與正負褒貶方向！</p>
+            <p style="margin-top:6px;">• <b>字卡即時聯動：</b>在翻開任何具備詞源的單字卡背面時，系統會自動標示該字的零件公式與同字根家族，點擊喇叭即可立即同步聽音練發音。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top:16px; text-align:center;">
+        <button class="action-btn btn-master" style="width:100%; max-width:280px;" onclick="closeEtymologyGuide()">
+          🎓 掌握法則・開始練習
         </button>
       </div>
     </div>

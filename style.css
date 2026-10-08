@@ -1233,3 +1233,375 @@ body {
   max-height: 90vh;
   overflow-y: auto;
 }
+
+/* ===================================================================
+   真・字根字首邏輯拆解與記憶學院樣式 (Etymology & Guide Modal Styles)
+   =================================================================== */
+.guide-trigger-btn {
+  background: rgba(246, 194, 62, 0.12) !important;
+  border: 1px dashed var(--chalk-yellow) !important;
+  color: var(--chalk-yellow) !important;
+  font-weight: 600;
+}
+.guide-trigger-btn:hover {
+  background: rgba(246, 194, 62, 0.25) !important;
+  box-shadow: 0 0 10px rgba(246, 194, 62, 0.3);
+}
+
+.etymology-section {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(246, 194, 62, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.guide-mini-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--chalk-yellow);
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.guide-mini-btn:hover {
+  background: rgba(246, 194, 62, 0.2);
+  border-color: var(--chalk-yellow);
+}
+
+.morph-formula-box {
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border-left: 3px solid var(--chalk-cyan);
+}
+
+.morph-parts-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.morph-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.morph-tag.tag-prefix {
+  background: rgba(46, 204, 113, 0.15);
+  border: 1px solid var(--chalk-green);
+  color: var(--chalk-green);
+}
+.morph-tag.tag-root {
+  background: rgba(246, 194, 62, 0.18);
+  border: 1px solid var(--chalk-yellow);
+  color: var(--chalk-yellow);
+  font-weight: 700;
+}
+.morph-tag.tag-suffix {
+  background: rgba(230, 126, 34, 0.18);
+  border: 1px solid var(--chalk-orange);
+  color: var(--chalk-orange);
+}
+
+.morph-plus {
+  color: var(--chalk-faint);
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.morph-synthesis {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--chalk-white);
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.family-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.family-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.family-chip:hover {
+  background: rgba(246, 194, 62, 0.15);
+  border-color: var(--chalk-yellow);
+  transform: translateY(-1px);
+}
+
+.family-word {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--chalk-white);
+}
+
+.family-trans {
+  font-size: 0.72rem;
+  color: var(--chalk-yellow);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.family-sound-icon {
+  position: absolute;
+  right: 6px;
+  top: 5px;
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+/* ===================================================================
+   字根字首記憶指南彈窗 (Etymology Guide Modal Layout)
+   =================================================================== */
+.etymology-guide-dialog {
+  max-width: 680px !important;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px 16px 20px !important;
+}
+
+.guide-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.guide-badge {
+  display: inline-block;
+  background: rgba(246, 194, 62, 0.15);
+  color: var(--chalk-yellow);
+  border: 1px solid var(--chalk-yellow);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.guide-intro {
+  font-size: 0.85rem;
+  color: var(--chalk-dim);
+  line-height: 1.6;
+  margin-top: 6px;
+}
+
+.guide-scrollable-body {
+  overflow-y: auto;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.guide-section-title {
+  font-size: 0.95rem;
+  color: var(--chalk-cyan);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.core-concepts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.concept-card {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+  border-top: 3px solid;
+}
+.concept-card.prefix-card { border-top-color: var(--chalk-green); }
+.concept-card.root-card { border-top-color: var(--chalk-yellow); }
+.concept-card.suffix-card { border-top-color: var(--chalk-orange); }
+
+.concept-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.concept-tag {
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.tag-prefix { background: rgba(46, 204, 113, 0.2); color: var(--chalk-green); }
+.tag-root { background: rgba(246, 194, 62, 0.2); color: var(--chalk-yellow); }
+.tag-suffix { background: rgba(230, 126, 34, 0.2); color: var(--chalk-orange); }
+
+.concept-pos-hint {
+  font-size: 0.68rem;
+  color: var(--chalk-faint);
+}
+
+.concept-desc {
+  font-size: 0.8rem;
+  color: var(--chalk-white);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.concept-example {
+  font-size: 0.74rem;
+  color: var(--chalk-dim);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+/* 示範方塊 */
+.breakdown-demo-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed rgba(246, 194, 62, 0.35);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.breakdown-word-banner {
+  font-size: 0.88rem;
+  color: var(--chalk-dim);
+  margin-bottom: 10px;
+  text-align: center;
+}
+.breakdown-word-banner .highlight-word {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--chalk-yellow);
+  margin-left: 6px;
+  letter-spacing: 0.5px;
+}
+
+.steps-flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.step-card {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.step-num {
+  font-size: 0.68rem;
+  color: var(--chalk-cyan);
+  font-weight: bold;
+}
+.step-name {
+  font-size: 0.82rem;
+  color: var(--chalk-white);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.step-body {
+  font-size: 0.78rem;
+  color: var(--chalk-dim);
+  line-height: 1.45;
+}
+
+.pill-prefix { color: var(--chalk-green); font-weight: bold; }
+.pill-root { color: var(--chalk-yellow); font-weight: bold; }
+.pill-suffix { color: var(--chalk-orange); font-weight: bold; }
+
+/* 家族展開卡 */
+.family-accordion-item {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.family-accordion-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.family-root-badge {
+  background: rgba(246, 194, 62, 0.2);
+  color: var(--chalk-yellow);
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.family-root-meaning {
+  font-size: 0.8rem;
+  color: var(--chalk-dim);
+}
+
+.family-words-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 6px;
+}
+
+.family-word-row {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+.family-word-row:hover {
+  background: rgba(246, 194, 62, 0.15);
+  border-left: 2px solid var(--chalk-yellow);
+}
+
+.f-word {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--chalk-white);
+}
+.f-formula {
+  font-size: 0.72rem;
+  color: var(--chalk-faint);
+  margin-top: 1px;
+}
+.f-trans {
+  font-size: 0.75rem;
+  color: var(--chalk-yellow);
+}
+
+.exam-tips-box {
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid var(--chalk-green);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  color: var(--chalk-dim);
+  line-height: 1.55;
+}
+
