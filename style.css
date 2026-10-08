@@ -1,0 +1,1235 @@
+/* ===================================================================
+   復古學院黑板風 (Vintage Academic Chalkboard) 設計系統
+   極致質感：墨綠磨砂黑板、胡桃木框、粉筆手繪刻痕、金屬銘牌、行動端滑動優化
+   =================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cinzel:wght@600;700;800&family=Noto+Serif+TC:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* 黑板色彩體系 */
+  --chalkboard-bg: #1c2e26;
+  --chalkboard-texture: radial-gradient(circle at 50% 50%, rgba(38, 66, 54, 0.95), rgba(18, 32, 26, 0.98));
+  --wood-frame-outer: #3d2314;
+  --wood-frame-inner: #24140b;
+  --wood-bevel: #5c371d;
+  
+  /* 粉筆手繪色調 */
+  --chalk-white: #f5f7f2;
+  --chalk-dim: rgba(245, 247, 242, 0.72);
+  --chalk-faint: rgba(245, 247, 242, 0.35);
+  --chalk-yellow: #f8e178;
+  --chalk-cyan: #89e2d9;
+  --chalk-pink: #fca7a7;
+  --chalk-green: #9be9a8;
+  --chalk-orange: #fbb272;
+
+  /* 金屬徽章與裝飾 */
+  --brass-gold: #d4af37;
+  --brass-shadow: rgba(0, 0, 0, 0.45);
+
+  /* 幾何與圓角 */
+  --board-radius: 18px;
+  --card-radius: 16px;
+  --btn-radius: 999px;
+  
+  /* 陰影體系 */
+  --chalk-glow: 0 0 10px rgba(245, 247, 242, 0.3);
+  --frame-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* 全域重置與基礎字型 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+body {
+  font-family: 'Outfit', 'Noto Serif TC', system-ui, -apple-system, sans-serif;
+  background: #111a15 radial-gradient(circle at center, #1b2921 0%, #0d1410 100%);
+  color: var(--chalk-white);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* 頂部裝飾木紋外框包覆層 */
+.app-viewport {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 24px 12px;
+  position: relative;
+}
+
+/* ===================================================================
+   黑板主體外框 (Chalkboard Cabinet Frame)
+   =================================================================== */
+.chalkboard-container {
+  background: var(--chalkboard-texture);
+  border: 10px solid var(--wood-frame-outer);
+  border-image: linear-gradient(135deg, #4f2e1b 0%, #29170d 50%, #5a341f 100%) 10;
+  border-radius: var(--board-radius);
+  box-shadow: var(--frame-shadow), inset 0 0 80px rgba(0, 0, 0, 0.7);
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 14px 18px 14px;
+  overflow: hidden;
+}
+
+/* 粉筆灰與擦拭擦痕背景遮罩 */
+.chalkboard-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(255, 255, 255, 0.03) 0%, transparent 60%),
+    repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255, 255, 255, 0.015) 36px, transparent 38px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 頂部古銅學院飾章與標題列 */
+.board-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.brand-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.school-crest {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crest-badge {
+  background: linear-gradient(135deg, #d4af37, #99751e);
+  color: #1a1405;
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  text-transform: uppercase;
+}
+
+.brand-title {
+  font-family: 'Cinzel', 'Noto Serif TC', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--chalk-white);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px dashed var(--chalk-faint);
+  color: var(--chalk-white);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 分類選單 (Category Selector Pills: 支援多行自適應換行，確保所有類別皆能直覺點選) */
+.category-scroll-wrapper {
+  margin: 0;
+  padding: 2px 0 6px 0;
+}
+
+.category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  width: 100%;
+}
+
+.pill-item {
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  border-radius: var(--btn-radius);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px dashed var(--chalk-faint);
+  color: var(--chalk-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pill-item.active {
+  background: rgba(248, 225, 120, 0.15);
+  border: 1px solid var(--chalk-yellow);
+  color: var(--chalk-yellow);
+  box-shadow: 0 0 12px rgba(248, 225, 120, 0.25);
+  transform: translateY(-1px);
+}
+
+/* 學習模式切換分頁 (Tabs) */
+.mode-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 4px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: var(--chalk-dim);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.tab-btn.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--chalk-white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-weight: 600;
+}
+
+/* ===================================================================
+   學習進度統計欄 (Progress Indicator)
+   =================================================================== */
+.progress-bar-container {
+  position: relative;
+  z-index: 2;
+  margin: 10px 0 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--chalk-dim);
+}
+
+.stats-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.stat-dot.mastered { background: var(--chalk-green); }
+.stat-dot.review { background: var(--chalk-orange); }
+
+.progress-track {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--chalk-cyan), var(--chalk-green));
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(155, 233, 168, 0.6);
+}
+
+/* ===================================================================
+   核心字卡區域 (Flashcard Deck & 3D Flip)
+   =================================================================== */
+.card-scene {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 500px;
+  min-height: 460px;
+  margin: 6px 0 14px 0;
+  perspective: 1200px;
+  touch-action: pan-y;
+  cursor: pointer;
+}
+
+.flashcard {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 460px;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 460px;
+  border-radius: var(--card-radius);
+  background: rgba(14, 25, 20, 0.96);
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), inset 0 0 30px rgba(0, 0, 0, 0.3);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 內部滾動層，確保內容完整可滾動 */
+.card-face-scroll {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+
+.card-front {
+  transform: rotateY(0deg);
+  opacity: 1;
+  z-index: 2;
+  pointer-events: auto;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+}
+
+.flashcard.is-flipped .card-front {
+  transform: rotateY(-180deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+}
+
+.flashcard.is-flipped .card-back {
+  transform: rotateY(0deg);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 3;
+}
+
+/* 粉筆線框裝飾角標 */
+.card-face::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* 卡片正面 */
+.card-front {
+  justify-content: space-between;
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.category-tag {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  background: rgba(248, 225, 120, 0.12);
+  color: var(--chalk-yellow);
+  border-radius: 4px;
+  border: 1px dashed rgba(248, 225, 120, 0.3);
+}
+
+.audio-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.sound-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--chalk-white);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sound-btn:active {
+  transform: scale(0.94);
+  background: rgba(137, 226, 217, 0.25);
+  border-color: var(--chalk-cyan);
+}
+
+.sound-btn.mic-btn:active, .sound-btn.mic-btn.listening {
+  background: rgba(252, 167, 167, 0.3);
+  border-color: var(--chalk-pink);
+  animation: pulse-ring 1.2s infinite;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(252, 167, 167, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(252, 167, 167, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(252, 167, 167, 0); }
+}
+
+/* 卡片中央主單字 */
+.word-core-block {
+  text-align: center;
+  margin: auto 0;
+  padding: 10px 0;
+}
+
+.vocab-word {
+  font-family: 'Outfit', serif;
+  font-size: 2.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--chalk-white);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.45);
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+.phonetic-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+  color: var(--chalk-yellow);
+  font-size: 1.15rem;
+  opacity: 0.95;
+}
+
+.pos-tag {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--chalk-cyan);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-style: italic;
+}
+
+/* 正面例句引導 */
+.front-sentence-hint {
+  background: rgba(0, 0, 0, 0.25);
+  border-left: 3px solid var(--chalk-cyan);
+  padding: 10px 12px;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.92rem;
+  color: var(--chalk-dim);
+  font-style: italic;
+  line-height: 1.45;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.front-sentence-hint:hover {
+  background: rgba(137, 226, 217, 0.12);
+}
+
+.sentence-sound-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--chalk-cyan);
+  font-size: 0.76rem;
+  padding: 4px 8px;
+  border-radius: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sentence-sound-btn:active {
+  transform: scale(0.94);
+  background: rgba(137, 226, 217, 0.3);
+}
+
+.tap-hint {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--chalk-yellow);
+  margin-top: 10px;
+  letter-spacing: 0.5px;
+  background: rgba(248, 225, 120, 0.08);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px dashed rgba(248, 225, 120, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: center;
+}
+
+.tap-hint:active {
+  background: rgba(248, 225, 120, 0.2);
+}
+
+.back-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.18);
+  padding-bottom: 8px;
+}
+
+.back-word {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--chalk-white);
+}
+
+.back-translation {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--chalk-yellow);
+  text-shadow: 0 0 8px rgba(248, 225, 120, 0.3);
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--chalk-cyan);
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.example-box {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--chalk-green);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.example-en {
+  font-size: 0.88rem;
+  color: var(--chalk-white);
+  line-height: 1.4;
+}
+
+.example-zh {
+  font-size: 0.82rem;
+  color: var(--chalk-dim);
+}
+
+.idiom-box {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--chalk-orange);
+  font-size: 0.85rem;
+}
+
+.idiom-phrase {
+  font-weight: 600;
+  color: var(--chalk-orange);
+}
+
+.derivations-box {
+  font-size: 0.8rem;
+  color: var(--chalk-dim);
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+/* ===================================================================
+   艾賓浩斯記憶法 底部互動控制盤 (Spaced Repetition Controls)
+   =================================================================== */
+.memory-actions {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 8px;
+}
+
+.action-btn {
+  border: none;
+  padding: 13px 8px;
+  border-radius: 12px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.action-btn:active {
+  transform: translateY(2px) scale(0.97);
+}
+
+.btn-again {
+  background: rgba(252, 167, 167, 0.15);
+  color: var(--chalk-pink);
+  border: 1px solid rgba(252, 167, 167, 0.35);
+}
+.btn-again:active {
+  background: rgba(252, 167, 167, 0.28);
+}
+
+.btn-hesitate {
+  background: rgba(251, 178, 114, 0.15);
+  color: var(--chalk-orange);
+  border: 1px solid rgba(251, 178, 114, 0.35);
+}
+.btn-hesitate:active {
+  background: rgba(251, 178, 114, 0.28);
+}
+
+.btn-master {
+  background: rgba(155, 233, 168, 0.2);
+  color: var(--chalk-green);
+  border: 1px solid rgba(155, 233, 168, 0.5);
+  box-shadow: 0 4px 14px rgba(155, 233, 168, 0.2);
+}
+.btn-master:active {
+  background: rgba(155, 233, 168, 0.35);
+}
+
+.btn-subtext {
+  font-size: 0.68rem;
+  opacity: 0.75;
+  font-weight: 400;
+}
+
+/* ===================================================================
+   拼寫練習模式 (Spelling Mode)
+   =================================================================== */
+.spelling-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.spelling-card {
+  background: rgba(14, 25, 20, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--card-radius);
+  padding: 24px 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.spell-hint-translation {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--chalk-yellow);
+}
+
+.spell-mask-slots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+  min-height: 44px;
+}
+
+.spell-slot {
+  width: 32px;
+  height: 42px;
+  border-bottom: 3px solid var(--chalk-white);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--chalk-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: lowercase;
+}
+
+.spell-slot.revealed {
+  color: var(--chalk-yellow);
+  border-bottom-color: var(--chalk-yellow);
+}
+
+.spell-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.spell-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--chalk-dim);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  color: var(--chalk-white);
+  text-align: center;
+  letter-spacing: 1.5px;
+  outline: none;
+}
+.spell-input:focus {
+  border-color: var(--chalk-cyan);
+  box-shadow: 0 0 10px rgba(137, 226, 217, 0.3);
+}
+
+.spell-submit-btn {
+  background: var(--chalk-green);
+  color: #12201a;
+  border: none;
+  font-weight: 700;
+  padding: 0 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.spell-actions-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.spell-hint-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px dashed var(--chalk-dim);
+  color: var(--chalk-dim);
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+}
+
+/* ===================================================================
+   字典速查模式 (Dictionary Search Mode)
+   =================================================================== */
+.dictionary-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.search-box-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 12px 14px 12px 38px;
+  color: var(--chalk-white);
+  font-size: 0.95rem;
+  outline: none;
+}
+.search-input:focus {
+  border-color: var(--chalk-yellow);
+}
+
+.search-icon-fixed {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--chalk-dim);
+}
+
+.dict-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.dict-item-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dict-item-card:active {
+  background: rgba(248, 225, 120, 0.12);
+  border-color: var(--chalk-yellow);
+}
+
+.dict-word-text {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--chalk-white);
+}
+
+.dict-word-zh {
+  color: var(--chalk-yellow);
+  font-size: 0.88rem;
+}
+
+/* ===================================================================
+   彈跳視窗 (Modals: 獎勵徽章、發音評分、自訂單字管理)
+   =================================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: var(--chalkboard-texture);
+  border: 6px solid var(--wood-frame-outer);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+  width: 100%;
+  max-width: 440px;
+  padding: 22px 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.3rem;
+  color: var(--chalk-yellow);
+  text-align: center;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--chalk-dim);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+/* 慶祝獎勵視窗 (Chalk Trophy) */
+.celebrate-trophy {
+  font-size: 3.5rem;
+  text-align: center;
+  animation: bounce 1s infinite alternate;
+}
+
+@keyframes bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-10px); }
+}
+
+.celebrate-text {
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--chalk-white);
+}
+
+/* 語音評分反饋條 */
+.speech-feedback-banner {
+  display: none;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+.speech-feedback-banner.excellent {
+  background: rgba(155, 233, 168, 0.2);
+  color: var(--chalk-green);
+  border: 1px solid var(--chalk-green);
+  display: block;
+}
+.speech-feedback-banner.good {
+  background: rgba(248, 225, 120, 0.2);
+  color: var(--chalk-yellow);
+  border: 1px solid var(--chalk-yellow);
+  display: block;
+}
+.speech-feedback-banner.retry {
+  background: rgba(252, 167, 167, 0.2);
+  color: var(--chalk-pink);
+  border: 1px solid var(--chalk-pink);
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 手勢滑動指引指示器 (Mobile Swipe Hint) */
+.mobile-swipe-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--chalk-faint);
+  margin-top: -6px;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.mobile-swipe-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--chalk-faint);
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+
+/* 響應式優化 (Mobile Media Queries) */
+@media (max-width: 480px) {
+  .app-viewport {
+    padding: 4px 6px 14px 6px;
+  }
+  .chalkboard-container {
+    border-width: 6px;
+    padding: 12px 10px;
+  }
+  .vocab-word {
+    font-size: 2.3rem;
+  }
+  .card-scene {
+    height: 450px;
+    min-height: 420px;
+  }
+  .flashcard {
+    min-height: 420px;
+  }
+  .card-face {
+    min-height: 420px;
+  }
+  .action-btn {
+    padding: 11px 4px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ===================================================================
+   本次練習量選單 (Session Batch Selector)
+   =================================================================== */
+.session-control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px dashed rgba(248, 225, 120, 0.35);
+  border-radius: 10px;
+  padding: 6px 12px;
+  margin-top: 6px;
+}
+
+.batch-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--chalk-dim);
+}
+
+.batch-select {
+  background: #182820;
+  border: 1px solid var(--chalk-yellow);
+  color: var(--chalk-yellow);
+  font-size: 0.82rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  outline: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shuffle-btn {
+  background: rgba(248, 225, 120, 0.12);
+  border: 1px dashed var(--chalk-yellow);
+  color: var(--chalk-yellow);
+  font-size: 0.78rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.shuffle-btn:hover {
+  background: rgba(248, 225, 120, 0.25);
+  box-shadow: 0 0 8px rgba(248, 225, 120, 0.3);
+  transform: translateY(-1px);
+}
+
+.shuffle-btn:active {
+  transform: scale(0.94);
+}
+
+.session-count-indicator {
+  font-size: 0.82rem;
+  color: var(--chalk-cyan);
+  font-weight: 600;
+}
+
+/* 相似詞、相反詞與字首字尾標籤 (Word Chips & Morphology) */
+.chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.word-chip {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  color: var(--chalk-white);
+  line-height: 1.3;
+}
+.word-chip.synonym {
+  border-color: rgba(155, 233, 168, 0.45);
+  color: var(--chalk-green);
+  background: rgba(155, 233, 168, 0.08);
+}
+.word-chip.antonym {
+  border-color: rgba(252, 167, 167, 0.45);
+  color: var(--chalk-pink);
+  background: rgba(252, 167, 167, 0.08);
+}
+
+.morphology-item {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  margin-top: 3px;
+  line-height: 1.4;
+  display: flex;
+  justify-content: space-between;
+  border-left: 2px solid var(--chalk-yellow);
+}
+
+/* ===================================================================
+   引導式即時拼寫提示彈窗 (Guided Active Recall Spelling Modal)
+   =================================================================== */
+.spelling-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.spelling-prompt-overlay.active {
+  display: flex !important;
+}
+
+.spelling-prompt-box {
+  background: var(--chalkboard-texture);
+  border: 4px solid var(--wood-frame-outer);
+  border-radius: 16px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.85);
+  width: 100%;
+  max-width: 440px;
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+
+.prompt-title-badge {
+  display: inline-block;
+  background: rgba(251, 178, 114, 0.2);
+  color: var(--chalk-orange);
+  border: 1px solid var(--chalk-orange);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  align-self: center;
+}
+
+.prompt-meaning {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--chalk-yellow);
+}
+
+.prompt-subhint {
+  font-size: 0.82rem;
+  color: var(--chalk-cyan);
+}
+
+.morphology-item {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  margin-top: 4px;
+  line-height: 1.4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 2px solid var(--chalk-yellow);
+}
+
+.morphology-word {
+  font-weight: 700;
+  color: var(--chalk-white);
+}
+
+.morphology-trans {
+  color: var(--chalk-yellow);
+  font-size: 0.8rem;
+  margin-left: 8px;
+}
+
+.spelling-prompt-box {
+  max-height: 90vh;
+  overflow-y: auto;
+}

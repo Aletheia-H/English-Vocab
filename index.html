@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>復古黑板英文字卡・全方位學習系統</title>
+  <meta name="description" content="復古學院黑板風格英文單字卡系統，支援手機觸控、離線自適應、會考2000單、高中7000單、托福、GRE、商務多益與專欄閱讀。">
+  <meta name="theme-color" content="#1c2e26">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <main class="app-viewport">
+    <div class="chalkboard-container">
+      
+      <!-- 頂部學院飾章與品牌列 -->
+      <header class="board-header">
+        <div class="brand-row">
+          <div class="school-crest">
+            <span class="crest-badge">ACADEMY</span>
+            <h1 class="brand-title">CHALKBOARD VOCAB</h1>
+          </div>
+          <div class="header-actions">
+            <button class="icon-btn" onclick="openCustomWordModal()" title="新增單字" aria-label="新增單字">➕</button>
+            <button class="icon-btn" onclick="openBackupModal()" title="資料備份" aria-label="資料備份">💾</button>
+          </div>
+        </div>
+
+        <!-- 分類滑動藥丸標籤列 (Category Scroll) -->
+        <nav class="category-scroll-wrapper" aria-label="單字分級類別">
+          <div class="category-pills" id="categoryPills">
+            <!-- 由 app.js 動態構建 -->
+          </div>
+        </nav>
+
+        <!-- 模式切換分頁 (Tabs) -->
+        <div class="mode-tabs" id="modeTabs">
+          <button class="tab-btn active" data-mode="flashcard" onclick="switchMode('flashcard')">
+            🎴 字卡記憶
+          </button>
+          <button class="tab-btn" data-mode="dictionary" onclick="switchMode('dictionary')">
+            📖 字典速查
+          </button>
+        </div>
+
+        <!-- 本次練習數量選擇列 (Requirement 1) -->
+        <div class="session-control-bar">
+          <div class="batch-selector-wrap">
+            <label for="batchSizeSelect">🎯 本次練習量：</label>
+            <select id="batchSizeSelect" class="batch-select" onchange="changeBatchSize(this.value)">
+              <option value="10">10 張</option>
+              <option value="20" selected>20 張</option>
+              <option value="30">30 張</option>
+              <option value="50">50 張</option>
+              <option value="100">100 張</option>
+              <option value="all">全部單字</option>
+            </select>
+            <button class="shuffle-btn" onclick="reshuffleBatch()" title="隨機換一批單字" aria-label="隨機換一批單字">
+              🔀 隨機換批
+            </button>
+          </div>
+          <div class="session-count-indicator">
+            卡片：<b id="sessionCardIndex">1</b> / <span id="sessionTotalCount">20</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- 學習進度條與統計 -->
+      <section class="progress-bar-container" aria-label="學習進度條">
+        <div class="progress-info">
+          <span id="categoryDescText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%;">
+            載入中...
+          </span>
+          <div class="stats-badges">
+            <span class="stat-item">
+              <span class="stat-dot mastered"></span>
+              熟記: <b id="masteredStatCount" style="color:var(--chalk-green); margin-left:2px;">0</b>
+            </span>
+            <span class="stat-item">
+              <span class="stat-dot review"></span>
+              待複習: <b id="reviewStatCount" style="color:var(--chalk-orange); margin-left:2px;">0</b>
+            </span>
+          </div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--chalk-faint); margin-top:2px;">
+          <span>本次掌握進度</span>
+          <span id="progressText">0%</span>
+        </div>
+      </section>
+
+      <!-- 語音辨識反饋通知橫幅 -->
+      <div id="speechFeedback" class="speech-feedback-banner"></div>
+
+      <!-- ==============================================
+           視圖 1: 核心字卡記憶 (Flashcard View)
+           ============================================== -->
+      <div id="flashcardView" style="display: block; width: 100%;">
+        <!-- 手機滑動提示 -->
+        <div class="mobile-swipe-indicator">
+          <span>👈 往左滑：非常熟悉 (下張)</span>
+          <span>👉 往右滑：不熟/陌生 (練習拼寫)</span>
+        </div>
+
+        <div class="card-scene" id="cardScene">
+          <article class="flashcard" id="flashcard">
+            <!-- 正面 -->
+            <div class="card-face card-front" id="cardFront">
+              <!-- JS 動態渲染 -->
+            </div>
+            <!-- 背面 -->
+            <div class="card-face card-back" id="cardBack">
+              <!-- JS 動態渲染 -->
+            </div>
+          </article>
+        </div>
+
+        <!-- 艾賓浩斯記憶法 底部互動控制盤 (Requirement 3: 三大選項) -->
+        <footer class="memory-actions" style="grid-template-columns: 1fr 1fr 1fr;">
+          <button class="action-btn btn-again" onclick="handleCardAssessment('stranger')" aria-label="陌生">
+            <span>🔴 陌生</span>
+            <span class="btn-subtext">1~2張後・拼寫練習</span>
+          </button>
+          <button class="action-btn btn-hesitate" onclick="handleCardAssessment('hesitate')" aria-label="不熟/忘了">
+            <span>🟠 不熟 / 忘了</span>
+            <span class="btn-subtext">排序中段・拼寫練習</span>
+          </button>
+          <button class="action-btn btn-master" onclick="handleCardAssessment('familiar')" aria-label="非常熟悉">
+            <span>🟢 非常熟悉</span>
+            <span class="btn-subtext">不再出現・直接跳下張</span>
+          </button>
+        </footer>
+      </div>
+
+      <!-- ==============================================
+           視圖 3: 字典速查模式 (Dictionary View)
+           ============================================== -->
+      <div id="dictionaryView" class="dictionary-view" style="display: none;">
+        <div class="search-box-wrap">
+          <span class="search-icon-fixed">🔍</span>
+          <input type="text" id="dictSearchInput" class="search-input" placeholder="搜尋單字、中文釋義、例句關鍵字..." autocomplete="off">
+        </div>
+        <div class="dict-list" id="dictList">
+          <!-- JS 動態渲染 -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==============================================
+       彈窗 1: 每掌握 10 字里程碑獎勵彈窗
+       ============================================== -->
+  <div class="modal-overlay" id="milestoneModal">
+    <div class="modal-content">
+      <button class="modal-close-btn" onclick="closeMilestoneModal()">✕</button>
+      <div class="celebrate-trophy">🏆</div>
+      <h2 class="modal-title">太棒了！學習里程碑達成！</h2>
+      <p class="celebrate-text">
+        您在本次練習中已成功熟記累積達標！<br>
+        持之以恆，每日複習，記憶將穩固深植大腦！
+      </p>
+      <button class="action-btn btn-master" style="width: 100%;" onclick="closeMilestoneModal()">
+        繼續前進！挑戰更多單字 💪
+      </button>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       彈窗 2: 新增個人自訂單字
+       ============================================== -->
+  <div class="modal-overlay" id="customWordModal">
+    <div class="modal-content">
+      <button class="modal-close-btn" onclick="closeCustomWordModal()">✕</button>
+      <h2 class="modal-title">➕ 新增個人單字</h2>
+      
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div>
+          <label style="font-size:0.8rem; color:var(--chalk-dim);">英文單字 *</label>
+          <input type="text" id="customWordInput" class="spell-input" style="text-align:left; width:100%; margin-top:4px;" placeholder="例如：perseverance">
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem; color:var(--chalk-dim);">中文翻譯 *</label>
+          <input type="text" id="customTransInput" class="spell-input" style="text-align:left; width:100%; margin-top:4px;" placeholder="例如：不屈不撓，毅力">
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem; color:var(--chalk-dim);">歸屬分類</label>
+          <select id="customCatSelect" class="spell-input" style="text-align:left; width:100%; margin-top:4px; font-size:0.9rem;">
+            <option value="junior_2000">🎒 國中會考 2000 單</option>
+            <option value="senior_7000">🏫 高中關鍵 7000 單</option>
+            <option value="toefl">📕 托福學術進階</option>
+            <option value="gre">🎓 GRE 頂尖學術思辨</option>
+            <option value="business">💼 職場商務與多益</option>
+            <option value="reading_daily" selected>☕ 專欄閱讀與日常會話</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem; color:var(--chalk-dim);">例句 (選填)</label>
+          <input type="text" id="customSentenceInput" class="spell-input" style="text-align:left; width:100%; margin-top:4px;" placeholder="輸入實用英文例句...">
+        </div>
+
+        <button class="action-btn btn-master" style="width:100%; margin-top:6px;" onclick="handleAddCustomWord()">
+          確認存入我的本機單字本
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       彈窗 3: 備份與還原管理 (個人 Device 儲存)
+       ============================================== -->
+  <div class="modal-overlay" id="backupModal">
+    <div class="modal-content">
+      <button class="modal-close-btn" onclick="closeBackupModal()">✕</button>
+      <h2 class="modal-title">💾 設備儲存與資料備份</h2>
+      
+      <p style="font-size:0.85rem; color:var(--chalk-dim); line-height:1.5;">
+        本系統所有學習進度與自訂單字均保存在您當前設備的瀏覽器（LocalStorage）中，保護隱私且無須聯網同步。
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+        <button class="action-btn btn-hesitate" style="width:100%;" onclick="exportBackupData()">
+          📥 一鍵匯出備份檔案 (JSON)
+        </button>
+
+        <label class="action-btn btn-again" style="width:100%; text-align:center; cursor:pointer;">
+          <span>📤 匯入備份檔案</span>
+          <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importBackupData(event)">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       彈窗 4: 引導式即時拼寫練習 (若選不熟或陌生時強制提示)
+       ============================================== -->
+  <div class="spelling-prompt-overlay" id="spellingPromptModal">
+    <div class="spelling-prompt-box">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="prompt-title-badge" id="spellingPromptBadge">✏️ 加深記憶・引導拼寫練習</span>
+        <button class="modal-close-btn" style="position:static; margin-left:auto;" onclick="closeSpellingPrompt(false)" title="關閉">✕</button>
+      </div>
+
+      <div class="prompt-meaning" id="spellingPromptTrans"></div>
+      <div class="prompt-subhint" id="spellingPromptPhonetic"></div>
+
+      <!-- 字母遮蔽格子 -->
+      <div class="spell-mask-slots" id="spellingPromptSlots"></div>
+
+      <!-- 輸入框與確認送出 -->
+      <div class="spell-input-group">
+        <input type="text" id="spellingPromptInput" class="spell-input" placeholder="請在此鍵入單字拼寫..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <button class="spell-submit-btn" onclick="submitSpellingPrompt()">送出</button>
+      </div>
+
+      <div class="spell-actions-row">
+        <button class="spell-hint-btn" onclick="playSpellingPromptAudio()">🔊 聽音提示</button>
+        <button class="spell-hint-btn" onclick="revealSpellingPromptAnswer()">💡 顯示全字</button>
+      </div>
+
+      <div id="spellingPromptFeedback" style="font-size:0.85rem; min-height:1.2rem; font-weight:600; color:var(--chalk-yellow);"></div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       彈窗 5: 本次練習量完成結算彈窗
+       ============================================== -->
+  <div class="modal-overlay" id="batchCompleteModal">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <button class="modal-close-btn" onclick="closeBatchCompleteModal()">✕</button>
+      <div class="celebrate-trophy">🎉</div>
+      <h2 class="modal-title" style="color:var(--chalk-yellow);">本次練習目標達成！</h2>
+      <p class="celebrate-text" id="batchCompleteSummary" style="margin: 12px 0 20px 0; font-size:0.95rem; line-height:1.6;">
+        您已完成當前設定的單字量！
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="action-btn btn-master" style="width: 100%;" onclick="startNextBatch()">
+          ▶️ 開始下一組新單字
+        </button>
+        <button class="action-btn btn-hesitate" style="width: 100%;" onclick="repeatCurrentBatch()">
+          🔄 再次複習本組單字
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
