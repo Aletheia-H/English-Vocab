@@ -466,18 +466,27 @@ function renderCurrentCard() {
             ` : ''}
           </div>
 
-          <!-- 同字根家族延伸 (滾雪球速記) -->
+          <!-- 同字根家族延伸 (精選 3 實用例與個別字拆解・點擊發音) -->
           ${(word.etymology.rootFamily && word.etymology.rootFamily.length > 0) ? `
-            <div style="margin-top:8px;">
-              <div style="font-size:0.75rem; color:var(--chalk-yellow); font-weight:600; margin-bottom:4px;">
-                🌱 同字根家族延伸（滾雪球記憶法・點擊聽音）：
+            <div class="family-examples-section">
+              <div class="family-examples-title">
+                🌱 同字根家族單字拆解（精選 3 例・點擊聽音）：
               </div>
-              <div class="family-chips-grid">
-                ${word.etymology.rootFamily.map(fam => `
-                  <div class="family-chip" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(fam.word)}')">
-                    <span class="family-word">${fam.word}</span>
-                    <span class="family-trans">${fam.meaning}</span>
-                    <span class="family-sound-icon">🔊</span>
+              <div class="family-examples-list">
+                ${word.etymology.rootFamily.slice(0, 3).map(fam => `
+                  <div class="family-example-card" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(fam.word)}')">
+                    <div class="family-card-top">
+                      <div class="family-word-name">
+                        <span class="f-name">${fam.word}</span>
+                        <span class="f-audio-tag">🔊 聽音</span>
+                      </div>
+                      <div class="family-meaning-text">${fam.meaning}</div>
+                    </div>
+                    ${fam.formula ? `
+                      <div class="family-formula-text">
+                        <span class="formula-label">🧩 拆解：</span>${fam.formula}
+                      </div>
+                    ` : ''}
                   </div>
                 `).join('')}
               </div>

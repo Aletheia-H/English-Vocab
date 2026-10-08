@@ -1374,6 +1374,105 @@ body {
 }
 
 /* ===================================================================
+   同字根家族精選 3 實例卡片樣式 (Family Examples Breakdown Cards)
+   =================================================================== */
+.family-examples-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(246, 194, 62, 0.25);
+}
+
+.family-examples-title {
+  font-size: 0.78rem;
+  color: var(--chalk-yellow);
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.family-examples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.family-example-card {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 3px solid var(--chalk-yellow);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.family-example-card:hover {
+  background: rgba(246, 194, 62, 0.14);
+  border-color: var(--chalk-yellow);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.family-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.family-word-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.family-word-name .f-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--chalk-white);
+  letter-spacing: 0.3px;
+}
+
+.family-word-name .f-audio-tag {
+  font-size: 0.68rem;
+  color: var(--chalk-cyan);
+  background: rgba(52, 152, 219, 0.15);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  padding: 1px 6px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.family-example-card:hover .f-audio-tag {
+  background: rgba(52, 152, 219, 0.3);
+  color: #fff;
+}
+
+.family-meaning-text {
+  font-size: 0.8rem;
+  color: var(--chalk-yellow);
+  font-weight: 600;
+}
+
+.family-formula-text {
+  font-size: 0.75rem;
+  color: var(--chalk-dim);
+  margin-top: 3px;
+  line-height: 1.35;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.family-formula-text .formula-label {
+  color: var(--chalk-cyan);
+  font-weight: 600;
+}
+
+/* ===================================================================
    字根字首記憶指南彈窗 (Etymology Guide Modal Layout)
    =================================================================== */
 .etymology-guide-dialog {
