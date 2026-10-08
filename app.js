@@ -346,65 +346,87 @@ function getCurrentWord() {
   return sessionQueue[currentIndex % sessionQueue.length];
 }
 
-function renderCurrentCard() {
-  const word = getCurrentWord();
-  if (!word) {
-    if (sessionInitialBatch.length > 0) {
-      openBatchCompleteModal();
-    } else {
-      renderEmptyCard();
+
+/**
+ * 結構化解析與美化中文釋義與常見搭配片語 (ECDICT 解析器)
+ * 解決 ECDICT 原始資料中 || 符號與短語雜揉、多詞性擠壓的痛點
+ */
+function formatTranslationHtml(rawTrans) {
+  if (!rawTrans) return '<div class="trans-text-body">（暫無中文釋義）</div>';
+
+  let mainPart = rawTrans.trim();
+  let phrasePart = '';
+
+  // 1. 拆分 ECDICT 附帶的片語/短語區塊 (|| 開頭)
+  if (mainPart.includes('||')) {
+    const splits = mainPart.split('||');
+    mainPart = splits[0].trim();
+    phrasePart = splits.slice(1).join(' ').trim();
+  }
+
+  // 2. 檢查 phrasePart 是否在尾部附帶了第二詞性釋義 (如 v. 1. (使)分開)
+  const secondaryPosMatch = phrasePart.match(/\s+([a-z]{1,4}\.\s*\d*.*)$/);
+  if (secondaryPosMatch) {
+    const posStr = secondaryPosMatch[1].trim();
+    phrasePart = phrasePart.slice(0, secondaryPosMatch.index).trim();
+    mainPart += ' ' + posStr;
+  }
+
+  // 3. 核心釋義結構化美化：標注序號與詞性切換
+  let formattedMain = mainPart
+    .replace(/\s+(\d+)\.\s*/g, ' <span class="trans-sense-badge">$1</span> ')
+    .replace(/\b(v\.|adj\.|adv\.|n\.|prep\.|conj\.|vt\.|vi\.)\s*/g, ' <span class="trans-pos-pill">$1</span> ');
+
+  // 4. 解析片語短語列表 (以中括號、斜線等符號分割)
+  let phraseHtml = '';
+  if (phrasePart) {
+    const rawItems = phrasePart.split(/[\[\]\/]+/).map(s => s.trim()).filter(Boolean);
+    const parsedPhrases = [];
+
+    for (const item of rawItems) {
+      // 嘗試拆分英文短語與中文解釋 (例如 "take part in參加" 或 "for my part至於我，對我來說")
+      const match = item.match(/^([a-zA-Z\s\(\)\'\-\,\.\…\d]+)([\u4e00-\u9fa5].*)$/);
+      if (match) {
+        const en = match[1].trim();
+        const zh = match[2].trim();
+        parsedPhrases.push(`
+          <div class="phrase-tag-item">
+            <span class="p-en">${renderClickableSentence(en)}</span>
+            <span class="p-zh">${zh}</span>
+            <span class="chip-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(en)}')">🔊</span>
+          </div>
+        `);
+      } else {
+        parsedPhrases.push(`
+          <div class="phrase-tag-item">
+            <span class="p-zh">${item}</span>
+          </div>
+        `);
+      }
     }
-    return;
+
+    if (parsedPhrases.length > 0) {
+      phraseHtml = `
+        <div class="trans-phrase-container">
+          <span class="trans-phrase-title">📚 常見搭配／慣用片語：</span>
+          <div class="trans-phrase-grid">
+            ${parsedPhrases.join('')}
+          </div>
+        </div>
+      `;
+    }
   }
 
-  // 重置翻面外觀
-  isCardFlipped = false;
-  if (dom.flashcard) {
-    dom.flashcard.classList.remove('is-flipped');
-  }
-
-  // 取得分類標籤
-  const catDef = CATEGORY_DEFINITIONS[word.category] || { badge: '🔖 自訂', name: '自訂' };
-
-  // 1. 正面渲染 (Front Face)
-  dom.cardFront.innerHTML = `
-    <div class="card-face-scroll">
-      <div class="card-top-row">
-        <span class="category-tag">${catDef.badge}</span>
-        <div class="audio-buttons">
-          <button class="sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.word)}')">
-            🔊 念讀單字
-          </button>
-          <button class="sound-btn mic-btn" id="micBtn" onclick="event.stopPropagation(); startShadowing('${escapeQuotes(word.word)}')">
-            🎙️ 跟讀評測
-          </button>
-        </div>
-      </div>
-
-      <div class="word-core-block">
-        <h2 class="vocab-word">${word.word}</h2>
-        <div class="phonetic-row">
-          <span>${word.kkPhonetic || ''}</span>
-          ${(word.partOfSpeech || []).map(pos => `<span class="pos-tag">${pos}</span>`).join('')}
-        </div>
-      </div>
-
-      ${word.exampleSentence ? `
-        <div class="front-sentence-hint" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
-          <div style="flex:1;">"${renderClickableSentence(word.exampleSentence, word.word)}"</div>
-          <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
-            🔊 朗讀例句
-          </button>
-        </div>
-      ` : ''}
-
-      <div class="tap-hint" onclick="event.stopPropagation(); toggleCardFlip()">
-        🔄 點擊翻面查看深度釋義 (或按空白鍵 Space)
-      </div>
-    </div>
+  return `
+    <div class="trans-text-body">${formattedMain}</div>
+    ${phraseHtml}
   `;
+}
 
-  // 2. 背面深度渲染 (Back Face: 8大核心要求完整呈現)
+function renderCardBack(word) {
+  if (!word) word = getCurrentWord();
+  if (!word) return;
+
   const synonymsList = (word.synonyms || []).slice(0, 5);
   const antonymsList = (word.antonyms || []).slice(0, 5);
   const prefixList = (word.samePrefixWords || []).slice(0, 3);
@@ -412,19 +434,24 @@ function renderCurrentCard() {
 
   dom.cardBack.innerHTML = `
     <div class="card-face-scroll">
-      <!-- 標題與音標、詞性、中文解釋 -->
+      <!-- 標題、音標、詞性與發音 (頂部列，不與中文釋義擠壓) -->
       <div class="back-header">
-        <div>
+        <div class="back-word-group">
           <div class="back-word">${word.word}</div>
-          <div style="font-size:0.82rem; color:var(--chalk-cyan); margin-top:2px;">
-            ${(word.partOfSpeech || []).join(' ')} ${word.kkPhonetic || ''}
+          <div class="back-phonetic-row">
+            ${(word.partOfSpeech || []).map(pos => `<span class="pos-tag">${pos}</span>`).join('')}
+            <span class="phonetic-text">${word.kkPhonetic || ''}</span>
           </div>
         </div>
-        <div style="text-align:right;">
-          <div class="back-translation">${word.translation}</div>
-          <button class="sentence-sound-btn" style="margin-top:4px;" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.word)}')">
-            🔊 朗讀單字
-          </button>
+        <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.word)}')">
+          🔊 朗讀單字
+        </button>
+      </div>
+
+      <!-- 核心釋義與常見搭配片語區 -->
+      <div class="detail-section translation-section">
+        <div class="trans-box">
+          ${formatTranslationHtml(word.translation)}
         </div>
       </div>
 
@@ -572,8 +599,70 @@ function renderCurrentCard() {
       </div>
     </div>
   `;
+}
 
-  // 更新計數指示與歷史導航列
+function renderCurrentCard() {
+  const word = getCurrentWord();
+  if (!word) {
+    if (sessionInitialBatch.length > 0) {
+      openBatchCompleteModal();
+    } else {
+      renderEmptyCard();
+    }
+    return;
+  }
+
+  // 重置翻面外觀
+  isCardFlipped = false;
+  if (dom.flashcard) {
+    dom.flashcard.classList.remove('is-flipped');
+  }
+
+  // 取得分類標籤
+  const catDef = CATEGORY_DEFINITIONS[word.category] || { badge: '🔖 自訂', name: '自訂' };
+
+  // 1. 正面渲染 (Front Face)
+  dom.cardFront.innerHTML = `
+    <div class="card-face-scroll">
+      <div class="card-top-row">
+        <span class="category-tag">${catDef.badge}</span>
+        <div class="audio-buttons">
+          <button class="sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.word)}')">
+            🔊 念讀單字
+          </button>
+          <button class="sound-btn mic-btn" id="micBtn" onclick="event.stopPropagation(); startShadowing('${escapeQuotes(word.word)}')">
+            🎙️ 跟讀評測
+          </button>
+        </div>
+      </div>
+
+      <div class="word-core-block">
+        <h2 class="vocab-word">${word.word}</h2>
+        <div class="phonetic-row">
+          <span>${word.kkPhonetic || ''}</span>
+          ${(word.partOfSpeech || []).map(pos => `<span class="pos-tag">${pos}</span>`).join('')}
+        </div>
+      </div>
+
+      ${word.exampleSentence ? `
+        <div class="front-sentence-hint" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
+          <div style="flex:1;">"${renderClickableSentence(word.exampleSentence, word.word)}"</div>
+          <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
+            🔊 朗讀例句
+          </button>
+        </div>
+      ` : ''}
+
+      <div class="tap-hint" onclick="event.stopPropagation(); toggleCardFlip()">
+        🔄 點擊翻面查看深度釋義 (或按空白鍵 Space)
+      </div>
+    </div>
+  `;
+
+  // 2. 背面深度渲染 (Back Face)
+  renderCardBack(word);
+
+  // 3. 更新計數指示與歷史導航列
   if (dom.sessionCardIndex && dom.sessionTotalCount) {
     dom.sessionCardIndex.innerText = Math.min(currentIndex + 1, sessionQueue.length);
     dom.sessionTotalCount.innerText = sessionQueue.length;
