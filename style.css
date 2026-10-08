@@ -664,6 +664,39 @@ body {
   color: var(--chalk-dim);
 }
 
+/* 例句、片語與內文中所有可點擊單字微交互 */
+.clickable-word {
+  cursor: pointer;
+  display: inline;
+  padding: 0 2px;
+  border-radius: 4px;
+  color: inherit;
+  transition: all 0.15s ease;
+  border-bottom: 1px dotted rgba(245, 247, 242, 0.4);
+}
+
+.clickable-word:hover {
+  color: var(--chalk-yellow);
+  background: rgba(248, 225, 120, 0.18);
+  border-bottom: 1px solid var(--chalk-yellow);
+  text-shadow: 0 0 6px rgba(248, 225, 120, 0.4);
+}
+
+.clickable-word:active {
+  transform: scale(0.96);
+}
+
+.clickable-word.target-word {
+  color: var(--chalk-yellow);
+  font-weight: 700;
+  border-bottom: 1.5px solid var(--chalk-yellow);
+  background: rgba(248, 225, 120, 0.08);
+}
+
+.clickable-word.target-word:hover {
+  background: rgba(248, 225, 120, 0.28);
+}
+
 .idiom-box {
   background: rgba(0, 0, 0, 0.25);
   border-radius: 8px;

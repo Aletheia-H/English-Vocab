@@ -391,7 +391,7 @@ function renderCurrentCard() {
 
       ${word.exampleSentence ? `
         <div class="front-sentence-hint" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
-          <div style="flex:1;">"${highlightWord(word.exampleSentence, word.word)}"</div>
+          <div style="flex:1;">"${renderClickableSentence(word.exampleSentence, word.word)}"</div>
           <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
             🔊 朗讀例句
           </button>
@@ -438,7 +438,7 @@ function renderCurrentCard() {
             </button>
           </div>
           <div class="example-box" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
-            <div class="example-en">${word.exampleSentence}</div>
+            <div class="example-en">${renderClickableSentence(word.exampleSentence, word.word)}</div>
             <div class="example-zh">${word.exampleTranslation || ''}</div>
           </div>
         </div>
@@ -454,10 +454,10 @@ function renderCurrentCard() {
             </button>
           </div>
           <div class="idiom-box">
-            <div class="idiom-phrase">${word.idiom.phrase}：${word.idiom.translation}</div>
+            <div class="idiom-phrase">${renderClickableSentence(word.idiom.phrase)}：${word.idiom.translation}</div>
             ${word.idiom.exampleSentence ? `
               <div class="example-en" style="margin-top:4px; font-size:0.83rem; cursor:pointer;" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.idiom.exampleSentence)}')">
-                "${word.idiom.exampleSentence}"
+                "${renderClickableSentence(word.idiom.exampleSentence)}"
               </div>
               <div class="example-zh" style="font-size:0.78rem;">${word.idiom.exampleTranslation || ''}</div>
             ` : ''}
@@ -472,7 +472,7 @@ function renderCurrentCard() {
           
           ${synonymsList.length > 0 ? `
             <div style="margin-top:3px;">
-              <span style="font-size:0.75rem; color:var(--chalk-green); font-weight:600;">✨ 相似詞 (點擊看字卡・喇叭聽音)：</span>
+              <span style="font-size:0.75rem; color:var(--chalk-green); font-weight:600;">✨ 相似詞：</span>
               <div class="chips-grid">
                 ${synonymsList.map(s => `
                   <span class="word-chip synonym" onclick="event.stopPropagation(); jumpToWordWithHistory(null, '${escapeQuotes(s)}')">
@@ -486,7 +486,7 @@ function renderCurrentCard() {
 
           ${antonymsList.length > 0 ? `
             <div style="margin-top:6px;">
-              <span style="font-size:0.75rem; color:var(--chalk-pink); font-weight:600;">⚡ 相反詞 (點擊看字卡・喇叭聽音)：</span>
+              <span style="font-size:0.75rem; color:var(--chalk-pink); font-weight:600;">⚡ 相反詞：</span>
               <div class="chips-grid">
                 ${antonymsList.map(a => `
                   <span class="word-chip antonym" onclick="event.stopPropagation(); jumpToWordWithHistory(null, '${escapeQuotes(a)}')">
@@ -538,11 +538,11 @@ function renderCurrentCard() {
             ` : ''}
           </div>
 
-          <!-- 同字根家族延伸 (精選 3 實用例與個別字拆解・點擊看字卡／聽音) -->
+          <!-- 同字根家族延伸 (精選 3 實用例與個別字拆解) -->
           ${(word.etymology.rootFamily && word.etymology.rootFamily.length > 0) ? `
             <div class="family-examples-section">
               <div class="family-examples-title">
-                🌱 同字根家族單字拆解（精選 3 例・點擊看字卡／聽音）：
+                🌱 同字根家族單字拆解（精選 3 例）：
               </div>
               <div class="family-examples-list">
                 ${word.etymology.rootFamily.slice(0, 3).map(fam => `
@@ -1383,25 +1383,200 @@ function renderDictCardHtml(item, matchType = '', query = '') {
 // 單字深層穿透查看與歷史導航棧 (Navigation Stack & Deep Linking)
 // ===================================================================
 
+// 常見英文不規則動詞/名詞/形容詞原型映射表 (常見詞形還原，確保例句點擊高命中率)
+const IRREGULAR_INFLECTIONS = {
+  'went': 'go', 'gone': 'go', 'was': 'be', 'were': 'be', 'been': 'be', 'am': 'be', 'is': 'be', 'are': 'be',
+  'had': 'have', 'has': 'have', 'having': 'have',
+  'did': 'do', 'does': 'do', 'doing': 'do', 'done': 'do',
+  'said': 'say', 'saying': 'say',
+  'made': 'make', 'making': 'make',
+  'took': 'take', 'taken': 'take', 'taking': 'take',
+  'came': 'come', 'coming': 'come',
+  'saw': 'see', 'seen': 'see', 'seeing': 'see',
+  'knew': 'know', 'known': 'know', 'knowing': 'know',
+  'got': 'get', 'gotten': 'get', 'getting': 'get',
+  'gave': 'give', 'given': 'give', 'giving': 'give',
+  'found': 'find', 'finding': 'find',
+  'thought': 'think', 'thinking': 'think',
+  'told': 'tell', 'telling': 'tell',
+  'became': 'become', 'becoming': 'become',
+  'left': 'leave', 'leaving': 'leave',
+  'felt': 'feel', 'feeling': 'feel',
+  'brought': 'bring', 'bringing': 'bring',
+  'began': 'begin', 'begun': 'begin', 'beginning': 'begin',
+  'kept': 'keep', 'keeping': 'keep',
+  'held': 'hold', 'holding': 'hold',
+  'wrote': 'write', 'written': 'write', 'writing': 'write',
+  'stood': 'stand', 'standing': 'stand',
+  'heard': 'hear', 'hearing': 'hear',
+  'meant': 'mean', 'meaning': 'mean',
+  'met': 'meet', 'meeting': 'meet',
+  'ran': 'run', 'running': 'run',
+  'paid': 'pay', 'paying': 'pay',
+  'sat': 'sit', 'sitting': 'sit',
+  'spoke': 'speak', 'spoken': 'speak', 'speaking': 'speak',
+  'lay': 'lie', 'lying': 'lie',
+  'led': 'lead', 'leading': 'lead',
+  'read': 'read', 'reading': 'read',
+  'grew': 'grow', 'grown': 'grow', 'growing': 'grow',
+  'lost': 'lose', 'losing': 'lose',
+  'fell': 'fall', 'fallen': 'fall', 'falling': 'fall',
+  'sent': 'send', 'sending': 'send',
+  'built': 'build', 'building': 'build',
+  'understood': 'understand', 'understanding': 'understand',
+  'drew': 'draw', 'drawn': 'draw', 'drawing': 'draw',
+  'broke': 'break', 'broken': 'break', 'breaking': 'break',
+  'spent': 'spend', 'spending': 'spend',
+  'rose': 'rise', 'risen': 'rise', 'rising': 'rise',
+  'drove': 'drive', 'driven': 'drive', 'driving': 'drive',
+  'bought': 'buy', 'buying': 'buy',
+  'wore': 'wear', 'worn': 'wear', 'wearing': 'wear',
+  'chose': 'choose', 'chosen': 'choose', 'choosing': 'choose',
+  'swam': 'swim', 'swum': 'swim', 'swimming': 'swim',
+  'ate': 'eat', 'eaten': 'eat', 'eating': 'eat',
+  'caught': 'catch', 'catching': 'catch',
+  'slept': 'sleep', 'sleeping': 'sleep',
+  'threw': 'throw', 'thrown': 'throw', 'throwing': 'throw',
+  'won': 'win', 'winning': 'win',
+  'taught': 'teach', 'teaching': 'teach',
+  'children': 'child', 'men': 'man', 'women': 'woman', 'feet': 'foot', 'teeth': 'tooth', 'mice': 'mouse', 'people': 'person',
+  'better': 'good', 'best': 'good', 'worse': 'bad', 'worst': 'bad', 'more': 'many', 'most': 'many', 'less': 'little', 'least': 'little'
+};
+
+function findWordInDictionary(queryWord) {
+  if (!queryWord) return null;
+  const clean = queryWord.trim().toLowerCase().replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
+  if (!clean) return null;
+
+  // 1. 完全相符
+  let match = vocabList.find(v => v.word.toLowerCase() === clean);
+  if (match) return match;
+
+  // 2. 移除所有格 's
+  if (clean.endsWith("'s")) {
+    const base = clean.slice(0, -2);
+    match = vocabList.find(v => v.word.toLowerCase() === base);
+    if (match) return match;
+  }
+
+  // 3. 不規則變形還原表
+  if (IRREGULAR_INFLECTIONS[clean]) {
+    const lemma = IRREGULAR_INFLECTIONS[clean];
+    match = vocabList.find(v => v.word.toLowerCase() === lemma);
+    if (match) return match;
+  }
+
+  // 4. 詞幹形態學規則推導 (複數、過去式、進行式、副詞、比較級)
+  const candidates = [];
+
+  // -ies -> -y (studies -> study)
+  if (clean.endsWith('ies') && clean.length > 4) {
+    candidates.push(clean.slice(0, -3) + 'y');
+  }
+  // -ied -> -y (studied -> study)
+  if (clean.endsWith('ied') && clean.length > 4) {
+    candidates.push(clean.slice(0, -3) + 'y');
+  }
+  // -ing (running -> run, dancing -> dance, walking -> walk)
+  if (clean.endsWith('ing') && clean.length > 4) {
+    const stem = clean.slice(0, -3);
+    candidates.push(stem);
+    candidates.push(stem + 'e');
+    if (stem.length >= 3 && stem[stem.length - 1] === stem[stem.length - 2]) {
+      candidates.push(stem.slice(0, -1)); // running -> run, swimming -> swim
+    }
+  }
+  // -ed (talked -> talk, liked -> like, stopped -> stop)
+  if (clean.endsWith('ed') && clean.length > 3) {
+    const stem = clean.slice(0, -2);
+    candidates.push(stem);
+    candidates.push(stem + 'e'); // liked -> like
+    if (stem.length >= 3 && stem[stem.length - 1] === stem[stem.length - 2]) {
+      candidates.push(stem.slice(0, -1)); // stopped -> stop
+    }
+  }
+  // -es (boxes -> box, watches -> watch, goes -> go)
+  if (clean.endsWith('es') && clean.length > 3) {
+    candidates.push(clean.slice(0, -2));
+    candidates.push(clean.slice(0, -1)); // rules -> rule
+  }
+  // -s (lessons -> lesson, books -> book)
+  if (clean.endsWith('s') && clean.length > 2 && !clean.endsWith('ss')) {
+    candidates.push(clean.slice(0, -1));
+  }
+  // -ly (quickly -> quick, happily -> happy)
+  if (clean.endsWith('ly') && clean.length > 3) {
+    candidates.push(clean.slice(0, -2));
+    if (clean.endsWith('ily')) {
+      candidates.push(clean.slice(0, -3) + 'y');
+    }
+  }
+  // -er / -est
+  if (clean.endsWith('er') && clean.length > 3) {
+    candidates.push(clean.slice(0, -2));
+    candidates.push(clean.slice(0, -1));
+  }
+  if (clean.endsWith('est') && clean.length > 4) {
+    candidates.push(clean.slice(0, -3));
+    candidates.push(clean.slice(0, -2));
+  }
+
+  for (const c of candidates) {
+    match = vocabList.find(v => v.word.toLowerCase() === c);
+    if (match) return match;
+  }
+
+  // 5. 前綴匹配或包含 (長度相差 <= 2)
+  match = vocabList.find(v => {
+    const w = v.word.toLowerCase();
+    return (w.startsWith(clean) || clean.startsWith(w)) && Math.abs(w.length - clean.length) <= 2;
+  });
+  if (match) return match;
+
+  return null;
+}
+
+function renderClickableSentence(sentence, targetWord = '') {
+  if (!sentence) return '';
+  const cleanTarget = (targetWord || '').trim().toLowerCase();
+
+  // 正則切分並匹配英文單詞（保留縮寫撇號，例如 don't, teacher's 等）
+  return sentence.replace(/\b([a-zA-Z]+(?:'[a-zA-Z]+)?)\b/g, (match) => {
+    const isTarget = cleanTarget && match.toLowerCase() === cleanTarget;
+    const escaped = escapeQuotes(match);
+    if (isTarget) {
+      return `<span class="clickable-word target-word" title="當前主單字・點擊查看" onclick="event.stopPropagation(); jumpToWordWithHistory(null, '${escaped}')">${match}</span>`;
+    } else {
+      return `<span class="clickable-word" title="點擊查看「${match}」字卡" onclick="event.stopPropagation(); jumpToWordWithHistory(null, '${escaped}')">${match}</span>`;
+    }
+  });
+}
+
 function jumpToWordWithHistory(wordId, wordText = '') {
-  // 1. 定位目標單字
+  // 1. 定位目標單字 (支援 ID 或智慧單詞/時態原型定位)
   let target = null;
   if (wordId) {
     target = vocabList.find(v => v.id === wordId);
   }
   if (!target && wordText) {
-    const cleanWord = wordText.trim().toLowerCase();
-    target = vocabList.find(v => v.word.toLowerCase() === cleanWord);
+    target = findWordInDictionary(wordText);
   }
 
   if (!target) {
-    alert(`在 36,000 字庫中未找到「${wordText}」的獨立字卡！`);
+    const cleanWord = (wordText || '').trim();
+    showFeedbackBanner('info', `📖 36,000 字庫中未找到「${cleanWord}」的獨立字卡，您可使用「📖 字典速查」查詢更多相關詞彙！`);
     return;
   }
 
-  // 2. 記錄目前單字進度至歷史棧
   const currentWord = getCurrentWord();
-  if (currentWord && currentWord.id !== target.id) {
+  // 若點擊的正是目前正在檢視的單字
+  if (currentWord && currentWord.id === target.id) {
+    showFeedbackBanner('info', `💡 目前正在查看單字「${target.word}」`);
+    return;
+  }
+
+  // 2. 記錄目前單字進度至歷史導航棧
+  if (currentWord) {
     navigationHistory.push({
       word: currentWord,
       fromMode: currentMode,
@@ -1422,6 +1597,7 @@ function jumpToWordWithHistory(wordId, wordText = '') {
   }
 
   updateHistoryNavBar();
+  showFeedbackBanner('good', `🔍 已開啟「${target.word}」字卡！可點擊上方導航列隨時返回「${currentWord ? currentWord.word : ''}」`);
 }
 
 function popNavigationHistory() {
@@ -1734,6 +1910,7 @@ window.jumpToWordWithHistory = jumpToWordWithHistory;
 window.clearDictSearch = clearDictSearch;
 window.changeSpellingOptin = changeSpellingOptin;
 window.skipCurrentSpellingWord = skipCurrentSpellingWord;
+window.renderClickableSentence = renderClickableSentence;
 
 // 頁面加載完成後啟動
 document.addEventListener('DOMContentLoaded', initApp);
