@@ -352,7 +352,7 @@ function getCurrentWord() {
  * 結構化解析與美化中文釋義與常見搭配片語 (ECDICT 解析器)
  * 解決 ECDICT 原始資料中 || 符號與短語雜揉、多詞性擠壓的痛點
  */
-function formatTranslationHtml(rawTrans) {
+function formatTranslationHtml(rawTrans, skipPhrases = false) {
   if (!rawTrans) return '<div class="trans-text-body">（暫無中文釋義）</div>';
 
   let mainPart = rawTrans.trim();
@@ -378,9 +378,9 @@ function formatTranslationHtml(rawTrans) {
     .replace(/\s+(\d+)\.\s*/g, ' <span class="trans-sense-badge">$1</span> ')
     .replace(/\b(v\.|adj\.|adv\.|n\.|prep\.|conj\.|vt\.|vi\.)\s*/g, ' <span class="trans-pos-pill">$1</span> ');
 
-  // 4. 解析片語短語列表 (以中括號、斜線等符號分割)
+  // 4. 解析片語短語列表 (若外部已有結構化帶例句片語卡片，則此處略過，避免無例句藥丸割裂版面)
   let phraseHtml = '';
-  if (phrasePart) {
+  if (phrasePart && !skipPhrases) {
     const rawItems = phrasePart.split(/[\[\]\/]+/).map(s => s.trim()).filter(Boolean);
     const parsedPhrases = [];
 
@@ -531,7 +531,7 @@ function renderCardBack(word) {
       ` : `
         <div class="detail-section translation-section">
           <div class="trans-box">
-            ${formatTranslationHtml(word.translation)}
+            ${formatTranslationHtml(word.translation, (Array.isArray(word.phrases) && word.phrases.length > 0) || !!word.idiom)}
           </div>
         </div>
 
