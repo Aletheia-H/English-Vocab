@@ -654,6 +654,25 @@ body {
   padding: 3px 9px;
   border-radius: 12px;
   letter-spacing: 0.3px;
+  transition: all 0.2s;
+}
+
+.front-phrase-tag.front-idiom-tag {
+  background: rgba(251, 178, 114, 0.16);
+  border: 1px solid var(--chalk-orange);
+  color: var(--chalk-orange);
+  box-shadow: 0 0 8px rgba(251, 178, 114, 0.22);
+}
+
+.idiom-card {
+  background: rgba(0, 0, 0, 0.26);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-left: 3.5px solid var(--chalk-orange);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 6px;
 }
 
 /* 多義項卡片 (Sense Card: 自然呈現，不帶生硬"例句"與"翻譯"字樣) */

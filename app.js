@@ -426,26 +426,49 @@ function formatTranslationHtml(rawTrans) {
 
 function getFrontPhrases(word) {
   if (!word) return [];
-  if (Array.isArray(word.phrases) && word.phrases.length > 0) {
-    return word.phrases.slice(0, 3).map(p => p.phrase);
-  }
+  const results = [];
+  
+  // 1. 若該單字有關聯母語經典俚語 (例如 ear 關聯 Play it by ear, oven 關聯 Have a bun in the oven)，優先加入並標記 isIdiom
   if (word.idiom && word.idiom.phrase) {
-    return [word.idiom.phrase];
+    results.push({
+      phrase: word.idiom.phrase,
+      isIdiom: true
+    });
   }
-  if (word.translation && word.translation.includes('||')) {
+
+  // 2. 加入常用搭配片語
+  if (Array.isArray(word.phrases) && word.phrases.length > 0) {
+    for (const p of word.phrases) {
+      if (!results.some(r => r.phrase.toLowerCase() === p.phrase.toLowerCase())) {
+        results.push({
+          phrase: p.phrase,
+          isIdiom: !!p.isIdiom
+        });
+      }
+      if (results.length >= 3) break;
+    }
+  }
+
+  // 3. 回退至 ECDICT 內建之短語解析
+  if (results.length < 3 && word.translation && word.translation.includes('||')) {
     const phrasePart = word.translation.split('||')[1] || '';
     const rawItems = phrasePart.split(/[\[\]\/]+/).map(s => s.trim()).filter(Boolean);
-    const phrases = [];
     for (const item of rawItems) {
       const match = item.match(/^([a-zA-Z\s\(\)\'\-\,\.\…\d]{3,40})/);
       if (match) {
-        phrases.push(match[1].trim());
-        if (phrases.length >= 3) break;
+        const ph = match[1].trim();
+        if (!results.some(r => r.phrase.toLowerCase() === ph.toLowerCase())) {
+          results.push({
+            phrase: ph,
+            isIdiom: false
+          });
+        }
+        if (results.length >= 3) break;
       }
     }
-    return phrases;
   }
-  return [];
+
+  return results;
 }
 
 function renderCardBack(word) {
@@ -533,12 +556,41 @@ function renderCardBack(word) {
         ` : ''}
       `}
 
-      <!-- 常用片語與例句拓展 -->
-      ${(word.phrases && word.phrases.length > 0) ? `
+      <!-- 經典俚語／道地慣用語 (Idiom Card: 專屬例句、翻譯、發音與句子跟讀) -->
+      ${word.idiom ? `
+        <div class="detail-section">
+          <span class="section-label">🎭 經典俚語／道地慣用</span>
+          <div class="idiom-card" style="margin-top:6px;">
+            <div class="phrase-header">
+              <div style="font-size:0.96rem; font-weight:700; color:var(--chalk-orange);">
+                <span>${renderClickableSentence(word.idiom.phrase)}</span>
+                <span style="font-size:0.85rem; color:var(--chalk-yellow); font-weight:normal; margin-left:8px;">${word.idiom.translation || ''}</span>
+              </div>
+              <div style="display:flex; gap:4px;">
+                <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.idiom.phrase)}')">
+                  🔊 朗讀
+                </button>
+                ${word.idiom.exampleSentence ? `
+                  <button class="sentence-sound-btn sentence-mic-btn" onclick="event.stopPropagation(); startSentenceShadowing('${escapeQuotes(word.idiom.exampleSentence)}', this)">
+                    🎙️ 跟讀
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+            ${word.idiom.exampleSentence ? `
+              <div class="sense-en-line" style="margin-top:3px;">"${renderClickableSentence(word.idiom.exampleSentence)}"</div>
+              ${word.idiom.exampleTranslation ? `<div class="sense-zh-line">${word.idiom.exampleTranslation}</div>` : ''}
+            ` : ''}
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- 常用搭配片語與語境例句 (排除與上述俚語重複之片語) -->
+      ${(word.phrases && word.phrases.filter(p => !word.idiom || p.phrase.toLowerCase() !== word.idiom.phrase.toLowerCase()).length > 0) ? `
         <div class="detail-section">
           <span class="section-label">💡 常用片語與語境</span>
           <div class="phrases-list" style="margin-top:6px;">
-            ${word.phrases.map(p => `
+            ${word.phrases.filter(p => !word.idiom || p.phrase.toLowerCase() !== word.idiom.phrase.toLowerCase()).map(p => `
               <div class="phrase-card">
                 <div class="phrase-header">
                   <div style="font-size:0.95rem; font-weight:700; color:var(--chalk-orange);">
@@ -564,30 +616,7 @@ function renderCardBack(word) {
             `).join('')}
           </div>
         </div>
-      ` : (word.idiom ? `
-        <div class="detail-section">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="section-label">💡 常用片語</span>
-            <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.idiom.phrase)}')">
-              🔊 朗讀
-            </button>
-          </div>
-          <div class="idiom-box">
-            <div class="idiom-phrase" style="font-weight:700; color:var(--chalk-orange);">
-              ${renderClickableSentence(word.idiom.phrase)}
-              <span style="font-size:0.85rem; color:var(--chalk-yellow); font-weight:normal; margin-left:8px;">${word.idiom.translation || ''}</span>
-            </div>
-            ${word.idiom.exampleSentence ? `
-              <div class="example-en" style="margin-top:4px; font-size:0.85rem;">
-                "${renderClickableSentence(word.idiom.exampleSentence)}"
-              </div>
-              ${word.idiom.exampleTranslation ? `
-                <div class="example-zh" style="font-size:0.8rem;">${word.idiom.exampleTranslation}</div>
-              ` : ''}
-            ` : ''}
-          </div>
-        </div>
-      ` : '')}
+      ` : ''}
 
       <!-- 5個相似詞 & 5個相反詞 -->
       ${(synonymsList.length > 0 || antonymsList.length > 0) ? `
@@ -754,9 +783,9 @@ function renderCurrentCard() {
 
       ${frontPhrases.length > 0 ? `
         <div class="front-phrases-group">
-          ${frontPhrases.map(ph => `
-            <span class="front-phrase-tag" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(ph)}')">
-              <span>${ph}</span>
+          ${frontPhrases.map(phObj => `
+            <span class="front-phrase-tag ${phObj.isIdiom ? 'front-idiom-tag' : ''}" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(phObj.phrase)}')">
+              <span>${phObj.isIdiom ? '🎭 ' : ''}${escapeQuotes(phObj.phrase)}</span>
               <span class="chip-sound-btn">🔊</span>
             </span>
           `).join('')}
