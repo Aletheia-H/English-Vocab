@@ -50,42 +50,60 @@ body {
   font-family: 'Outfit', 'Noto Serif TC', system-ui, -apple-system, sans-serif;
   background: #111a15 radial-gradient(circle at center, #1b2921 0%, #0d1410 100%);
   color: var(--chalk-white);
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  overflow: hidden;
   position: relative;
 }
 
-/* 頂部裝飾木紋外框包覆層 */
+/* 頂部裝飾木紋外框包覆層 (鎖定 100dvh 視窗內，黑板外框 100% 完整呈現) */
 .app-viewport {
   width: 100%;
   max-width: 680px;
   margin: 0 auto;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: 10px 12px 24px 12px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  overflow: hidden;
   position: relative;
 }
 
 /* ===================================================================
-   黑板主體外框 (Chalkboard Cabinet Frame)
+   黑板主體外框 (Chalkboard Cabinet Frame - 完整收合於視窗內)
    =================================================================== */
 .chalkboard-container {
   background: var(--chalkboard-texture);
-  border: 10px solid var(--wood-frame-outer);
-  border-image: linear-gradient(135deg, #4f2e1b 0%, #29170d 50%, #5a341f 100%) 10;
+  border: 8px solid var(--wood-frame-outer);
+  border-image: linear-gradient(135deg, #4f2e1b 0%, #29170d 50%, #5a341f 100%) 8;
   border-radius: var(--board-radius);
   box-shadow: var(--frame-shadow), inset 0 0 80px rgba(0, 0, 0, 0.7);
   position: relative;
   flex: 1;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px 14px 18px 14px;
+  padding: 10px 12px;
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* 字典速查模式啟用時：自動隱藏字卡專屬控制項，讓搜尋框直接置頂 */
+.dictionary-mode-active .category-scroll-wrapper,
+.dictionary-mode-active .session-control-bar,
+.dictionary-mode-active .progress-bar-container {
+  display: none !important;
+}
+
+.dictionary-mode-active .board-header {
+  margin-bottom: 4px;
 }
 
 /* 粉筆灰與擦拭擦痕背景遮罩 */
@@ -550,27 +568,34 @@ body {
   font-style: italic;
 }
 
-/* 正面例句引導 */
+/* 正面例句引導 (無生硬"例句"標籤，自然黑板手寫語境) */
 .front-sentence-hint {
-  background: rgba(0, 0, 0, 0.25);
-  border-left: 3px solid var(--chalk-cyan);
+  background: rgba(0, 0, 0, 0.28);
+  border-left: 3.5px solid var(--chalk-cyan);
   padding: 10px 12px;
   border-radius: 0 8px 8px 0;
-  font-size: 0.92rem;
-  color: var(--chalk-dim);
-  font-style: italic;
-  line-height: 1.45;
+  font-size: 0.95rem;
+  color: var(--chalk-white);
+  line-height: 1.48;
   margin-top: 10px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
 }
 
-.front-sentence-hint:hover {
-  background: rgba(137, 226, 217, 0.12);
+.sentence-text-line {
+  font-style: italic;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.sentence-actions-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .sentence-sound-btn {
@@ -578,7 +603,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: var(--chalk-cyan);
   font-size: 0.76rem;
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 14px;
   white-space: nowrap;
   cursor: pointer;
@@ -594,25 +619,125 @@ body {
   background: rgba(137, 226, 217, 0.3);
 }
 
-.tap-hint {
-  text-align: center;
-  font-size: 0.78rem;
+.sentence-mic-btn {
   color: var(--chalk-yellow);
-  margin-top: 10px;
-  letter-spacing: 0.5px;
+  border-color: rgba(248, 225, 120, 0.35);
   background: rgba(248, 225, 120, 0.08);
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px dashed rgba(248, 225, 120, 0.3);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  align-self: center;
 }
 
-.tap-hint:active {
-  background: rgba(248, 225, 120, 0.2);
+.sentence-mic-btn:hover {
+  background: rgba(248, 225, 120, 0.18);
+}
+
+.sentence-mic-btn.listening {
+  background: rgba(252, 167, 167, 0.25);
+  border-color: var(--chalk-pink);
+  color: var(--chalk-pink);
+  animation: pulseListen 1.2s infinite;
+}
+
+/* 正面核心片語線索群 (純英文，不標贅字，引導聯想) */
+.front-phrases-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.front-phrase-tag {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(248, 225, 120, 0.4);
+  color: var(--chalk-yellow);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+}
+
+/* 多義項卡片 (Sense Card: 自然呈現，不帶生硬"例句"與"翻譯"字樣) */
+.sense-card {
+  background: rgba(0, 0, 0, 0.26);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--chalk-yellow);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.sense-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sense-title-text {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--chalk-yellow);
+}
+
+.sense-pos-badge {
+  background: rgba(137, 226, 217, 0.18);
+  color: var(--chalk-cyan);
+  border: 1px solid var(--chalk-cyan);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-right: 5px;
+}
+
+.sense-en-line {
+  font-size: 0.88rem;
+  color: var(--chalk-white);
+  line-height: 1.42;
+}
+
+.sense-zh-line {
+  font-size: 0.82rem;
+  color: var(--chalk-dim);
+  line-height: 1.4;
+}
+
+/* 片語專屬卡片 (Phrase Card) */
+.phrase-card {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--chalk-orange);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.phrase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.phrase-title-text {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--chalk-orange);
+}
+
+.phrase-en-line {
+  font-size: 0.86rem;
+  color: var(--chalk-white);
+  line-height: 1.4;
+}
+
+.phrase-zh-line {
+  font-size: 0.8rem;
+  color: var(--chalk-dim);
 }
 
 .back-header {
@@ -1019,8 +1144,11 @@ body {
 .dictionary-view {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .dict-header-banner {
@@ -1151,8 +1279,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  max-height: calc(100dvh - 350px);
-  min-height: 240px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-width: thin;

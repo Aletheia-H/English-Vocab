@@ -54,6 +54,7 @@ function initDomReferences() {
     cardFront: document.getElementById('cardFront'),
     cardBack: document.getElementById('cardBack'),
     cardScene: document.getElementById('cardScene'),
+    chalkboardContainer: document.querySelector('.chalkboard-container'),
     categoryPills: document.getElementById('categoryPills'),
     modeTabs: document.getElementById('modeTabs'),
     progressBar: document.getElementById('progressBar'),
@@ -423,6 +424,30 @@ function formatTranslationHtml(rawTrans) {
   `;
 }
 
+function getFrontPhrases(word) {
+  if (!word) return [];
+  if (Array.isArray(word.phrases) && word.phrases.length > 0) {
+    return word.phrases.slice(0, 3).map(p => p.phrase);
+  }
+  if (word.idiom && word.idiom.phrase) {
+    return [word.idiom.phrase];
+  }
+  if (word.translation && word.translation.includes('||')) {
+    const phrasePart = word.translation.split('||')[1] || '';
+    const rawItems = phrasePart.split(/[\[\]\/]+/).map(s => s.trim()).filter(Boolean);
+    const phrases = [];
+    for (const item of rawItems) {
+      const match = item.match(/^([a-zA-Z\s\(\)\'\-\,\.\…\d]{3,40})/);
+      if (match) {
+        phrases.push(match[1].trim());
+        if (phrases.length >= 3) break;
+      }
+    }
+    return phrases;
+  }
+  return [];
+}
+
 function renderCardBack(word) {
   if (!word) word = getCurrentWord();
   if (!word) return;
@@ -448,49 +473,121 @@ function renderCardBack(word) {
         </button>
       </div>
 
-      <!-- 核心釋義與常見搭配片語區 -->
-      <div class="detail-section translation-section">
-        <div class="trans-box">
-          ${formatTranslationHtml(word.translation)}
+      <!-- 核心多義解析或釋義區 (自然排版，不帶生硬標籤) -->
+      ${(word.senses && word.senses.length > 0) ? `
+        <div class="detail-section">
+          <span class="section-label">📚 多義解析與語境</span>
+          <div class="senses-list" style="margin-top:6px;">
+            ${word.senses.map(s => `
+              <div class="sense-card">
+                <div class="sense-header">
+                  <div class="sense-title-text">
+                    ${s.badge ? `<span style="margin-right:4px;">${s.badge}</span>` : ''}
+                    ${s.pos ? `<span class="sense-pos-badge">${s.pos}</span>` : ''}
+                    <span>${s.def || s.zh || ''}</span>
+                  </div>
+                  ${(s.en || s.sentence) ? `
+                    <div style="display:flex; gap:4px;">
+                      <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(s.en || s.sentence)}')">
+                        🔊 朗讀
+                      </button>
+                      <button class="sentence-sound-btn sentence-mic-btn" onclick="event.stopPropagation(); startSentenceShadowing('${escapeQuotes(s.en || s.sentence)}', this)">
+                        🎙️ 跟讀
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+                ${(s.en || s.sentence) ? `
+                  <div class="sense-en-line">"${renderClickableSentence(s.en || s.sentence, word.word)}"</div>
+                  ${(s.zh || s.sentenceZh) ? `<div class="sense-zh-line">${s.zh || s.sentenceZh}</div>` : ''}
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
         </div>
-      </div>
+      ` : `
+        <div class="detail-section translation-section">
+          <div class="trans-box">
+            ${formatTranslationHtml(word.translation)}
+          </div>
+        </div>
 
-      <!-- 例句與例句中文翻譯 -->
-      ${word.exampleSentence ? `
+        ${word.exampleSentence ? `
+          <div class="detail-section">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="section-label">💬 語境應用</span>
+              <div style="display:flex; gap:6px;">
+                <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
+                  🔊 朗讀
+                </button>
+                <button class="sentence-sound-btn sentence-mic-btn" onclick="event.stopPropagation(); startSentenceShadowing('${escapeQuotes(word.exampleSentence)}', this)">
+                  🎙️ 跟讀
+                </button>
+              </div>
+            </div>
+            <div class="example-box">
+              <div class="example-en">${renderClickableSentence(word.exampleSentence, word.word)}</div>
+              ${word.exampleTranslation ? `<div class="example-zh">${word.exampleTranslation}</div>` : ''}
+            </div>
+          </div>
+        ` : ''}
+      `}
+
+      <!-- 常用片語與例句拓展 -->
+      ${(word.phrases && word.phrases.length > 0) ? `
+        <div class="detail-section">
+          <span class="section-label">💡 常用片語與語境</span>
+          <div class="phrases-list" style="margin-top:6px;">
+            ${word.phrases.map(p => `
+              <div class="phrase-card">
+                <div class="phrase-header">
+                  <div style="font-size:0.95rem; font-weight:700; color:var(--chalk-orange);">
+                    <span>${renderClickableSentence(p.phrase)}</span>
+                    <span style="font-size:0.85rem; color:var(--chalk-yellow); font-weight:normal; margin-left:8px;">${p.def || p.translation || ''}</span>
+                  </div>
+                  <div style="display:flex; gap:4px;">
+                    <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(p.phrase)}')">
+                      🔊 朗讀
+                    </button>
+                    ${(p.en || p.sentence) ? `
+                      <button class="sentence-sound-btn sentence-mic-btn" onclick="event.stopPropagation(); startSentenceShadowing('${escapeQuotes(p.en || p.sentence)}', this)">
+                        🎙️ 跟讀
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+                ${(p.en || p.sentence) ? `
+                  <div class="sense-en-line" style="margin-top:2px;">"${renderClickableSentence(p.en || p.sentence)}"</div>
+                  ${(p.zh || p.sentenceZh) ? `<div class="sense-zh-line">${p.zh || p.sentenceZh}</div>` : ''}
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : (word.idiom ? `
         <div class="detail-section">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="section-label">📖 經典例句與中文翻譯</span>
-            <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
-              🔊 朗讀例句
-            </button>
-          </div>
-          <div class="example-box" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
-            <div class="example-en">${renderClickableSentence(word.exampleSentence, word.word)}</div>
-            <div class="example-zh">${word.exampleTranslation || ''}</div>
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- 俚語 / 常用片語與翻譯例句 -->
-      ${word.idiom ? `
-        <div class="detail-section">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="section-label">💡 實用俚語／片語拓展</span>
+            <span class="section-label">💡 常用片語</span>
             <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.idiom.phrase)}')">
-              🔊 朗讀片語
+              🔊 朗讀
             </button>
           </div>
           <div class="idiom-box">
-            <div class="idiom-phrase">${renderClickableSentence(word.idiom.phrase)}：${word.idiom.translation}</div>
+            <div class="idiom-phrase" style="font-weight:700; color:var(--chalk-orange);">
+              ${renderClickableSentence(word.idiom.phrase)}
+              <span style="font-size:0.85rem; color:var(--chalk-yellow); font-weight:normal; margin-left:8px;">${word.idiom.translation || ''}</span>
+            </div>
             ${word.idiom.exampleSentence ? `
-              <div class="example-en" style="margin-top:4px; font-size:0.83rem; cursor:pointer;" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.idiom.exampleSentence)}')">
+              <div class="example-en" style="margin-top:4px; font-size:0.85rem;">
                 "${renderClickableSentence(word.idiom.exampleSentence)}"
               </div>
-              <div class="example-zh" style="font-size:0.78rem;">${word.idiom.exampleTranslation || ''}</div>
+              ${word.idiom.exampleTranslation ? `
+                <div class="example-zh" style="font-size:0.8rem;">${word.idiom.exampleTranslation}</div>
+              ` : ''}
             ` : ''}
           </div>
         </div>
-      ` : ''}
+      ` : '')}
 
       <!-- 5個相似詞 & 5個相反詞 -->
       ${(synonymsList.length > 0 || antonymsList.length > 0) ? `
@@ -593,10 +690,6 @@ function renderCardBack(word) {
           ` : ''}
         </div>
       ` : ''}
-
-      <div class="tap-hint" style="margin-top:14px;" onclick="event.stopPropagation(); toggleCardFlip()">
-        🔄 點擊翻回正面
-      </div>
     </div>
   `;
 }
@@ -620,6 +713,7 @@ function renderCurrentCard() {
 
   // 取得分類標籤
   const catDef = CATEGORY_DEFINITIONS[word.category] || { badge: '🔖 自訂', name: '自訂' };
+  const frontPhrases = getFrontPhrases(word);
 
   // 1. 正面渲染 (Front Face)
   dom.cardFront.innerHTML = `
@@ -645,17 +739,29 @@ function renderCurrentCard() {
       </div>
 
       ${word.exampleSentence ? `
-        <div class="front-sentence-hint" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
-          <div style="flex:1;">"${renderClickableSentence(word.exampleSentence, word.word)}"</div>
-          <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
-            🔊 朗讀例句
-          </button>
+        <div class="front-sentence-hint">
+          <div class="sentence-text-line">"${renderClickableSentence(word.exampleSentence, word.word)}"</div>
+          <div class="sentence-actions-group">
+            <button class="sentence-sound-btn" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(word.exampleSentence)}')">
+              🔊 朗讀
+            </button>
+            <button class="sentence-sound-btn sentence-mic-btn" onclick="event.stopPropagation(); startSentenceShadowing('${escapeQuotes(word.exampleSentence)}', this)">
+              🎙️ 句子跟讀
+            </button>
+          </div>
         </div>
       ` : ''}
 
-      <div class="tap-hint" onclick="event.stopPropagation(); toggleCardFlip()">
-        🔄 點擊翻面查看深度釋義 (或按空白鍵 Space)
-      </div>
+      ${frontPhrases.length > 0 ? `
+        <div class="front-phrases-group">
+          ${frontPhrases.map(ph => `
+            <span class="front-phrase-tag" onclick="event.stopPropagation(); playPronunciation('${escapeQuotes(ph)}')">
+              <span>${ph}</span>
+              <span class="chip-sound-btn">🔊</span>
+            </span>
+          `).join('')}
+        </div>
+      ` : ''}
     </div>
   `;
 
@@ -1078,38 +1184,10 @@ function repeatCurrentBatch() {
 }
 
 // ===================================================================
-// 7. 手機觸控滑動手勢 (Mobile Swipe Gestures)
+// 7. 手機觸控操作 (Mobile Touch Handling - 取消滑動避免誤判)
 // ===================================================================
 function setupTouchEvents() {
-  const cardScene = document.getElementById('cardScene');
-  if (!cardScene) return;
-
-  cardScene.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
-
-  cardScene.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    touchEndY = e.changedTouches[0].screenY;
-    handleSwipeGesture();
-  }, { passive: true });
-}
-
-function handleSwipeGesture() {
-  const deltaX = touchEndX - touchStartX;
-  const deltaY = touchEndY - touchStartY;
-  
-  // 避免垂直捲動誤判為橫向滑動
-  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 48) {
-    if (deltaX < 0) {
-      // 往左滑：非常熟悉 (下張)
-      handleCardAssessment('familiar');
-    } else {
-      // 往右滑：不熟/陌生 (觸發引導拼寫)
-      handleCardAssessment('stranger');
-    }
-  }
+  // 取消左右滑動手勢，保留原生觸控捲動與自然點擊，避免手勢誤觸
 }
 
 // ===================================================================
@@ -1183,6 +1261,62 @@ function startShadowing(targetWord) {
 
   recognition.onend = () => {
     if (micBtn) micBtn.classList.remove('listening');
+  };
+
+  recognition.start();
+}
+
+function startSentenceShadowing(targetSentence, btnEl) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showFeedbackBanner('retry', '您的設備目前不支援麥克風語音辨識，請點「🔊 朗讀」出聲跟讀！');
+    return;
+  }
+
+  if (btnEl) btnEl.classList.add('listening');
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    showFeedbackBanner('good', '🎙️ 聆聽例句跟讀中... 請出聲朗讀例句！');
+  };
+
+  recognition.onresult = (event) => {
+    const spokenText = event.results[0][0].transcript.trim().toLowerCase();
+    
+    // 比對例句詞彙重合率 (Token-overlap matching)
+    const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+    const targetTokens = normalize(targetSentence);
+    const spokenTokens = normalize(spokenText);
+
+    if (targetTokens.length === 0) return;
+
+    let matchedCount = 0;
+    const spokenSet = new Set(spokenTokens);
+    targetTokens.forEach(t => {
+      if (spokenSet.has(t)) matchedCount++;
+    });
+    const matchRatio = matchedCount / targetTokens.length;
+
+    if (matchRatio >= 0.8) {
+      showFeedbackBanner('excellent', `🌟 太棒了！例句念得非常流利標準！(${Math.round(matchRatio * 100)}% 吻合)`);
+      playChalkSuccessSound();
+    } else if (matchRatio >= 0.5) {
+      showFeedbackBanner('good', `👍 很好！語調相當不錯 (聽到 "${spokenText.slice(0, 32)}...")，再念一次會更完美！`);
+    } else {
+      showFeedbackBanner('retry', `💪 聽到 "${spokenText.slice(0, 25)}..."，點擊「🔊 朗讀」多聽一遍再挑戰！`);
+    }
+  };
+
+  recognition.onerror = () => {
+    showFeedbackBanner('retry', '未偵測到清晰聲音，請在安靜處再試一次！');
+  };
+
+  recognition.onend = () => {
+    if (btnEl) btnEl.classList.remove('listening');
   };
 
   recognition.start();
@@ -1727,6 +1861,15 @@ function switchMode(mode) {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
 
+  const chalkboard = dom.chalkboardContainer || document.querySelector('.chalkboard-container');
+  if (chalkboard) {
+    if (mode === 'dictionary') {
+      chalkboard.classList.add('dictionary-mode-active');
+    } else {
+      chalkboard.classList.remove('dictionary-mode-active');
+    }
+  }
+
   if (dom.flashcardView) dom.flashcardView.style.display = mode === 'flashcard' ? 'flex' : 'none';
   if (dom.dictionaryView) dom.dictionaryView.style.display = mode === 'dictionary' ? 'flex' : 'none';
 
@@ -1878,10 +2021,13 @@ function playChalkSuccessSound() {
 // 14. 事件監聽 (Event Listeners)
 // ===================================================================
 function setupEventListeners() {
-  // 點擊卡片本體翻面
+  // 點擊卡片本體翻面 (排除點擊任何交互按鈕、標籤與文字)
   if (dom.flashcard) {
     dom.flashcard.addEventListener('click', (e) => {
-      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) {
+      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select') ||
+          e.target.closest('.clickable-word') || e.target.closest('.word-chip') ||
+          e.target.closest('.family-example-card') || e.target.closest('.front-phrase-tag') ||
+          e.target.closest('.chip-sound-btn') || e.target.closest('.f-audio-tag')) {
         return;
       }
       toggleCardFlip();
@@ -1977,6 +2123,8 @@ window.clearDictSearch = clearDictSearch;
 window.changeSpellingOptin = changeSpellingOptin;
 window.skipCurrentSpellingWord = skipCurrentSpellingWord;
 window.renderClickableSentence = renderClickableSentence;
+window.startShadowing = startShadowing;
+window.startSentenceShadowing = startSentenceShadowing;
 
 // 頁面加載完成後啟動
 document.addEventListener('DOMContentLoaded', initApp);

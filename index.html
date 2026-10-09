@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#1c2e26">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="style.css?v=20261009_clean_dock_dict_v7">
+  <link rel="stylesheet" href="style.css?v=20261009_v8_clean_shadowing">
 </head>
 <body>
 
@@ -156,14 +156,14 @@
 
         <!-- 艾賓浩斯記憶法 底部互動控制盤 (三大精簡核心選項 - 常駐吸底・永不移出視口) -->
         <footer class="memory-actions" id="memoryActionsDock">
-          <button class="action-btn btn-again" onclick="handleCardAssessment('stranger')" aria-label="陌生 (👉右滑)">
-            <span>🔴 陌生 (👉右滑)</span>
+          <button class="action-btn btn-again" onclick="handleCardAssessment('stranger')" aria-label="陌生">
+            <span>🔴 陌生</span>
           </button>
-          <button class="action-btn btn-hesitate" onclick="handleCardAssessment('hesitate')" aria-label="不熟/忘了">
+          <button class="action-btn btn-hesitate" onclick="handleCardAssessment('hesitate')" aria-label="不熟 / 忘了">
             <span>🟠 不熟 / 忘了</span>
           </button>
-          <button class="action-btn btn-master" onclick="handleCardAssessment('familiar')" aria-label="非常熟悉 (👈左滑)">
-            <span>🟢 非常熟悉 (👈左滑)</span>
+          <button class="action-btn btn-master" onclick="handleCardAssessment('familiar')" aria-label="非常熟悉">
+            <span>🟢 非常熟悉</span>
           </button>
         </footer>
       </div>
@@ -172,18 +172,8 @@
            視圖 3: 36,000 全庫字典速查模式 (36K Authority Dictionary View)
            ============================================== -->
       <div id="dictionaryView" class="dictionary-view" style="display: none;">
-        <div class="dict-header-banner">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="dict-title-badge">📖 36,000 權威英漢字典速查</span>
-            <span class="dict-count-pill" id="dictTotalCountBadge">全庫 36,000 字</span>
-          </div>
-          <div class="dict-subtitle-hint">
-            不限分類・直接輸入英文、中文釋義或關鍵字即打即查・點擊即跳轉單字卡
-          </div>
-        </div>
-
-        <!-- 36,000 全庫直接速查搜尋框 (不選分類，直接檢索) -->
-        <div class="search-box-wrap" style="margin-top: 10px;">
+        <!-- 直接置頂 36,000 全庫速查搜尋框 (無多餘說明橫幅) -->
+        <div class="search-box-wrap" style="margin-top: 4px;">
           <span class="search-icon-fixed">🔍</span>
           <input type="text" id="dictSearchInput" class="search-input" placeholder="直接輸入英文單字或中文釋義快速檢索..." autocomplete="off">
           <button id="dictClearBtn" class="search-clear-btn" style="display:none;" onclick="clearDictSearch()" title="清除搜尋">✕</button>
@@ -818,7 +808,7 @@
     </div>
   </div>
 
-  <script src="data.js?v=20261009_clean_dock_dict_v7"></script>
-  <script src="app.js?v=20261009_clean_dock_dict_v7"></script>
+  <script src="data.js?v=20261009_v8_clean_shadowing"></script>
+  <script src="app.js?v=20261009_v8_clean_shadowing"></script>
 </body>
 </html>
